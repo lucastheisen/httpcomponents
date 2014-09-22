@@ -1,0 +1,21 @@
+# Vi
+*~
+.*.swp
+
+# Eclipse
+/.project
+/.classpath
+/.settings
+/target
+
+# Maven release plugin
+/pom.xml.releaseBackup
+/release.properties
+
+# Maven multi-module in eclipse
+/*/.project
+/*/.classpath
+/*/.settings
+/*/target
+/*/pom.xml.releaseBackup
+/*/release.properties
