@@ -11,6 +11,8 @@ import java.lang.annotation.Target;
 @Target(
 { ElementType.METHOD, ElementType.TYPE } )
 public @interface Server {
+    public String contextPath() default "";
+    
     public boolean external() default false;
 
     public Filter[] filters() default {};

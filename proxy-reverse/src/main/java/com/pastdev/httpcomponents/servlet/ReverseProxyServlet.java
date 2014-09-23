@@ -45,9 +45,9 @@ import com.pastdev.httpcomponents.configuration.JndiConfiguration;
 import com.pastdev.httpcomponents.util.ProxyUri;
 
 
-public class ProxyServlet extends HttpServlet {
+public class ReverseProxyServlet extends HttpServlet {
     private static final long serialVersionUID = 9091933627516767566L;
-    private static Logger logger = LoggerFactory.getLogger( ProxyServlet.class );
+    private static Logger logger = LoggerFactory.getLogger( ReverseProxyServlet.class );
     /* http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1 */
     private static final HeaderGroup HOB_BY_HOP_HEADERS;
 
@@ -61,9 +61,9 @@ public class ProxyServlet extends HttpServlet {
     };
 
     static {
-        String jndiRoot = System.getProperty( "httpcomponents.servlet.jndiroot" );
+        String jndiRoot = System.getProperty( "httpcomponents.reverseproxy.jndiroot" );
         if ( jndiRoot == null ) {
-            JNDI_ROOT = "java:/comp/env/httpcomponents/servlet";
+            JNDI_ROOT = "java:/comp/env/httpcomponents/reverseproxy";
         }
         else {
             JNDI_ROOT = "java:/comp/env/" + jndiRoot;

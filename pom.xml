@@ -15,6 +15,17 @@
   <packaging>pom</packaging>
 
   <name>HttpComponents</name>
+  <description>A set of http related components</description>
+  <url>https://github.com/lucastheisen/jsch-extension</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+      <comments>A business-friendly OSS license</comments>
+    </license>
+  </licenses>
 
   <scm>
     <connection>scm:git:git://github.com/lucastheisen/httpcomponents.git</connection>
@@ -22,6 +33,20 @@
     <url>http://github.com/lucastheisen/httpcomponents</url>
     <tag>HEAD</tag>
   </scm>
+
+  <organization>
+    <name>pastdev.com</name>
+    <url>http://pastdev.com</url>
+  </organization>
+
+  <developers>
+    <developer>
+      <id>lucastheisen</id>
+      <name>Lucas Theisen</name>
+      <email>lucastheisen@pastdev.com</email>
+      <organization>pastdev.com</organization>
+    </developer>
+  </developers>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -163,7 +188,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <version>${maven-release-plugin.version}</version><!--$NO-MVN-MAN-VER$-->
+        <version>${maven-release-plugin.version}</version><!--$NO-MVN-MAN-VER$ -->
       </plugin>
     </plugins>
     <pluginManagement>

@@ -38,8 +38,8 @@ import org.slf4j.LoggerFactory;
 import com.pastdev.http.client.HttpClientFactory;
 
 
-public class ProxyServletTest {
-    private static Logger logger = LoggerFactory.getLogger( ProxyServletTest.class );
+public class ReverseProxyServletTest {
+    private static Logger logger = LoggerFactory.getLogger( ReverseProxyServletTest.class );
 
     @Rule
     public ServerRule server = new JettyServerRule();
@@ -57,7 +57,7 @@ public class ProxyServletTest {
                     name = "Proxy Server",
                     servlets = { @Servlet(
                             name = "Proxy Servlet",
-                            type = ProxyServlet.class,
+                            type = ReverseProxyServlet.class,
                             configuration = @Configuration(
                                     environment = { @Environment(
                                             name = "targetUri",
@@ -71,7 +71,7 @@ public class ProxyServletTest {
                 .setHost( "localhost" )
                 .setPort( server.getPort( "proxy" ) )
                 .build() ) );
-        assertEquals( response.getStatusLine().getStatusCode(), 200 );
+        assertEquals( 200, response.getStatusLine().getStatusCode() );
         assertEquals( "Hello World", EntityUtils.toString( response.getEntity() ) );
     }
 
@@ -88,7 +88,7 @@ public class ProxyServletTest {
                     name = "Proxy Server",
                     servlets = { @Servlet(
                             name = "Proxy Servlet",
-                            type = ProxyServlet.class,
+                            type = ReverseProxyServlet.class,
                             configuration = @Configuration(
                                     environment = { @Environment(
                                             name = "targetUri",
@@ -113,7 +113,49 @@ public class ProxyServletTest {
                 .setHost( "localhost" )
                 .setPort( server.getPort( "proxy" ) )
                 .build() ) );
-        assertEquals( response.getStatusLine().getStatusCode(), 200 );
+        assertEquals( 200, response.getStatusLine().getStatusCode() );
+        assertEquals( "Hello World", EntityUtils.toString( response.getEntity() ) );
+    }
+
+    @Test
+    @Servers( servers = {
+            @Server(
+                    id = "hello",
+                    name = "Hello World Server",
+                    servlets = { @Servlet(
+                            name = "Hello World Servlet",
+                            mapping = "/hello",
+                            type = HelloWorldServlet.class ) } ),
+            @Server(
+                    id = "proxy",
+                    name = "Proxy Server",
+                    contextPath = "/proxy",
+                    servlets = { @Servlet(
+                            name = "Proxy Servlet",
+                            type = ReverseProxyServlet.class,
+                            configuration = @Configuration(
+                                    environment = { @Environment(
+                                            name = "targetUri",
+                                            serverRef = "hello",
+                                            value = "uriString" ) } ) ) } ) } )
+    public void testWithContextPath() throws Exception {
+        logger.debug( "hello world!" );
+        HttpClient client = HttpClientBuilder.create().build();
+        HttpResponse response = client.execute( new HttpGet( new URIBuilder()
+                .setScheme( "http" )
+                .setHost( "localhost" )
+                .setPort( server.getPort( "proxy" ) )
+                .setPath( "/proxy/hel" )
+                .build() ) );
+        assertEquals( 404, response.getStatusLine().getStatusCode() );
+
+        response = client.execute( new HttpGet( new URIBuilder()
+                .setScheme( "http" )
+                .setHost( "localhost" )
+                .setPort( server.getPort( "proxy" ) )
+                .setPath( "/proxy/hello" )
+                .build() ) );
+        assertEquals( 200, response.getStatusLine().getStatusCode() );
         assertEquals( "Hello World", EntityUtils.toString( response.getEntity() ) );
     }
 

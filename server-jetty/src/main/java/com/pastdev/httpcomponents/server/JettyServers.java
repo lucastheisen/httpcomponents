@@ -122,6 +122,11 @@ public class JettyServers implements com.pastdev.httpcomponents.server.Servers {
 
             ServletContextHandler handler = new ServletContextHandler();
             handler.setSessionHandler( new SessionHandler( new HashSessionManager() ) );
+            
+            String contextPath = config.contextPath();
+            if ( contextPath != null && ! contextPath.isEmpty() ) {
+                handler.setContextPath( contextPath );
+            }
 
             for ( ServletContextListener listener : config.servletContextListeners() ) {
                 handler.addEventListener( newServletContextListener(

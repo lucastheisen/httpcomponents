@@ -26,9 +26,9 @@ public class HttpClientFactoryServletContextListener
     private static final String JNDI_ROOT;
 
     static {
-        String jndiRoot = System.getProperty( "httpcomponents.tunnel.jndiroot" );
+        String jndiRoot = System.getProperty( "httpcomponents.httpclientfactory.jndiroot" );
         if ( jndiRoot == null ) {
-            JNDI_ROOT = "java:/comp/env/httpcomponents/tunnel";
+            JNDI_ROOT = "java:/comp/env/httpcomponents/httpclientfactory";
         }
         else {
             JNDI_ROOT = "java:/comp/env/" + jndiRoot;

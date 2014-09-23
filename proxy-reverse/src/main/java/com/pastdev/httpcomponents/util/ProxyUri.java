@@ -80,10 +80,21 @@ public class ProxyUri {
                 : new URI( servletRequest.getRequestURL().toString() + "?"
                         + queryString );
 
+        String requestPath = requestUri.getPath();
+        String contextPath = servletRequest.getContextPath();
+        if ( contextPath != null && !contextPath.isEmpty() ) {
+            // strip context path from path as context is only for this servlet
+            if ( ! requestPath.startsWith( contextPath ) ) {
+                throw new IllegalStateException( "request path ["
+                        + requestPath + "] does not begin with context path ["
+                        + contextPath + "]" );
+            }
+            requestPath = requestPath.substring( contextPath.length() );
+        }
         List<NameValuePair> parameters = URLEncodedUtils
                 .parse( requestUri, "UTF-8" );
         URIBuilder builder = builder()
-                .setPath( requestUri.getPath() );
+                .setPath( requestPath );
         if ( parameters != null && !parameters.isEmpty() ) {
             builder.setParameters( parameters );
         }
