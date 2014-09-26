@@ -27,8 +27,8 @@ public class MapConfiguration implements Configuration {
     }
 
     @Override
-    public <T> T get( Enum<?> key, Class<T> type ) {
-        return get( key.name(), type );
+    public <T> T get( Key key, Class<T> type ) {
+        return get( key.key(), type );
     }
 
     @Override
@@ -39,8 +39,8 @@ public class MapConfiguration implements Configuration {
     }
 
     @Override
-    public Boolean has( Enum<?> key ) {
-        return has( key.name() );
+    public Boolean has( Key key ) {
+        return has( key.key() );
     }
 
     @Override

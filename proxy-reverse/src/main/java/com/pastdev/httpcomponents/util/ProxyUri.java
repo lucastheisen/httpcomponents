@@ -35,7 +35,7 @@ public class ProxyUri {
         this.proxyPath = proxyUri.getPath();
     }
 
-    private URIBuilder builder() {
+    public URIBuilder builder() {
         URIBuilder builder = new URIBuilder() {
             @Override
             public URIBuilder setPath( String path ) {

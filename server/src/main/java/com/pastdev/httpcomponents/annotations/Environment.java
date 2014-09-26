@@ -9,7 +9,7 @@ public @interface Environment {
     public FactoryParam[] factoryParams() default {};
 
     public String name();
-    
+
     public String serverRef() default "";
     
     public String value() default "";

@@ -12,26 +12,25 @@ import com.pastdev.jsch.tunnel.TunnelConnectionManager;
 
 
 public class TunnelConnectionManagerFactory {
-    private static final Logger logger = LoggerFactory.getLogger( 
+    private static final Logger logger = LoggerFactory.getLogger(
             TunnelConnectionManagerFactory.class );
-    public static enum Keys { tunnel, knownHosts, identity };
 
     public static TunnelConnectionManager newInstance( Configuration configuration ) {
         TunnelConnectionManager tunnelConnectionManager = null;
 
-        String tunnel = configuration.get( Keys.tunnel.toString(), String.class );
+        String tunnel = configuration.get( Key.TUNNEL, String.class );
         if ( tunnel != null ) {
             logger.debug( "Configuring tunnel {}", tunnel );
             try {
                 DefaultSessionFactory defaultSessionFactory =
                         new DefaultSessionFactory();
-                if ( configuration.has( Keys.knownHosts.toString() ) ) {
+                if ( configuration.has( Key.KNOWN_HOSTS ) ) {
                     defaultSessionFactory.setKnownHosts( configuration.get(
-                            Keys.knownHosts.toString(), String.class ) );
+                            Key.KNOWN_HOSTS, String.class ) );
                 }
-                if ( configuration.has( Keys.identity.toString() ) ) {
+                if ( configuration.has( Key.IDENTITY ) ) {
                     defaultSessionFactory.setIdentityFromPrivateKey( configuration.get(
-                            Keys.identity.toString(), String.class ) );
+                            Key.IDENTITY, String.class ) );
                 }
 
                 tunnelConnectionManager =
@@ -44,5 +43,22 @@ public class TunnelConnectionManagerFactory {
         }
 
         return tunnelConnectionManager;
+    }
+
+    public static enum Key implements com.pastdev.httpcomponents.configuration.Key {
+        TUNNEL("tunnel"),
+        KNOWN_HOSTS("knownHosts"),
+        IDENTITY("identity");
+
+        private String key;
+
+        private Key( String key ) {
+            this.key = key;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
     }
 }

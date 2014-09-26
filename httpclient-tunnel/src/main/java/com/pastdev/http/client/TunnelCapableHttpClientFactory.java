@@ -23,15 +23,16 @@ import org.slf4j.LoggerFactory;
 
 
 import com.jcraft.jsch.JSchException;
+import com.pastdev.http.client.DefaultHttpClientFactory.Key;
 import com.pastdev.httpcomponents.configuration.Configuration;
 import com.pastdev.httpcomponents.configuration.MapConfiguration;
 import com.pastdev.jsch.tunnel.Tunnel;
 import com.pastdev.jsch.tunnel.TunnelConnectionManager;
 
 
-public class HttpClientFactory {
-    private static Logger logger = LoggerFactory.getLogger( HttpClientFactory.class );
-    private static final Configuration DEFAULT_CONFIGURATION = new MapConfiguration();
+public class TunnelCapableHttpClientFactory implements HttpClientFactory {
+    private static Logger logger = LoggerFactory.getLogger( TunnelCapableHttpClientFactory.class );
+    public static final Configuration DEFAULT_CONFIGURATION = new MapConfiguration();
 
     private HttpClientBuilder builder;
     private TunnelConnectionManager tunnelConnectionManager;
@@ -51,26 +52,30 @@ public class HttpClientFactory {
         return poolingmgr;
     }
 
-    public HttpClient newInstance() {
-        return newInstance( DEFAULT_CONFIGURATION );
+    @Override
+    public HttpClient create() {
+        return create( DEFAULT_CONFIGURATION );
     }
 
-    public HttpClient newInstance( CookieStore cookieStore ) {
-        return newInstance( DEFAULT_CONFIGURATION, cookieStore );
+    @Override
+    public HttpClient create( CookieStore cookieStore ) {
+        return create( DEFAULT_CONFIGURATION, cookieStore );
     }
 
-    public HttpClient newInstance( Configuration configuration ) {
-        return newInstance( configuration, null );
+    @Override
+    public HttpClient create( Configuration configuration ) {
+        return create( configuration, null );
     }
 
-    public HttpClient newInstance( Configuration configuration, 
+    @Override
+    public HttpClient create( Configuration configuration, 
             CookieStore cookies ) {
         builder = HttpClientBuilder.create();
         if ( cookies != null ) {
             builder.setDefaultCookieStore( cookies );
         }
-        String redirectsEnabled = configuration.get(
-                "http.protocol.handle-redirects", String.class );
+        String redirectsEnabled = configuration.get( Key.HANDLE_REDIRECTS,
+                String.class );
         RequestConfig.Builder requestConfigBuilder = RequestConfig.custom();
         if ( redirectsEnabled != null ) {
             requestConfigBuilder

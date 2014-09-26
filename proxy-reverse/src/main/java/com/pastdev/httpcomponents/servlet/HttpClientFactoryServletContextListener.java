@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-import com.pastdev.http.client.HttpClientFactory;
+import com.pastdev.http.client.TunnelCapableHttpClientFactory;
 import com.pastdev.http.client.TunnelConnectionManagerFactory;
 import com.pastdev.jsch.tunnel.TunnelConnectionManager;
 
@@ -58,7 +58,7 @@ public class HttpClientFactoryServletContextListener
 
         tunnelConnectionManager = TunnelConnectionManagerFactory
                 .newInstance( configuration );
-        HttpClientFactory httpClientFactory = new HttpClientFactory();
+        TunnelCapableHttpClientFactory httpClientFactory = new TunnelCapableHttpClientFactory();
         httpClientFactory.setTunnelConnectionManager( tunnelConnectionManager );
         sce.getServletContext().setAttribute( HTTP_CLIENT_FACTORY,
                 httpClientFactory );

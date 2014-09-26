@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-import com.pastdev.http.client.HttpClientFactory;
+import com.pastdev.http.client.TunnelCapableHttpClientFactory;
 
 
 public class ReverseProxyServletTest {
@@ -107,7 +107,7 @@ public class ReverseProxyServletTest {
                                                     value = "localhost" ) } ) } ) ) } ) } )
     public void testWithTunnel() throws Exception {
         logger.debug( "hello world through a tunnel!" );
-        HttpClient client = new HttpClientFactory().newInstance();
+        HttpClient client = new TunnelCapableHttpClientFactory().create();
         HttpResponse response = client.execute( new HttpGet( new URIBuilder()
                 .setScheme( "http" )
                 .setHost( "localhost" )

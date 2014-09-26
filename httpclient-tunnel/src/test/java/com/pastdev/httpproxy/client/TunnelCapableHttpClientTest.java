@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-import com.pastdev.http.client.HttpClientFactory;
+import com.pastdev.http.client.TunnelCapableHttpClientFactory;
 import com.pastdev.http.client.TunnelConnectionManagerFactory;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servlet;
@@ -56,11 +56,11 @@ public class TunnelCapableHttpClientTest {
         logger.debug( "testing GET" );
         Configuration configuration = new MapConfiguration()
                 .add( "tunnel", "localhost|localhost:" + server.getPort( "server" ) );
-        HttpClientFactory httpClientFactory = new HttpClientFactory();
+        TunnelCapableHttpClientFactory httpClientFactory = new TunnelCapableHttpClientFactory();
         httpClientFactory.setTunnelConnectionManager(
                 TunnelConnectionManagerFactory.newInstance( configuration ) );
 
-        HttpResponse response = httpClientFactory.newInstance()
+        HttpResponse response = httpClientFactory.create()
                 .execute( new HttpGet( new URIBuilder()
                         .setScheme( "http" )
                         .setHost( "localhost" )

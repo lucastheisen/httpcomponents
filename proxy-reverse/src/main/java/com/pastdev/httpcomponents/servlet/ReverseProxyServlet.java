@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+import com.pastdev.http.client.DefaultHttpClientFactory;
 import com.pastdev.http.client.HttpClientFactory;
 import com.pastdev.httpcomponents.configuration.Configuration;
 import com.pastdev.httpcomponents.configuration.InitParameterConfiguration;
@@ -53,12 +54,6 @@ public class ReverseProxyServlet extends HttpServlet {
 
     public static final String ATTRIBUTE_COOKIE_STORE = "cookieStore";
     public static final String JNDI_ROOT;
-
-    public static enum Keys {
-        targetUri, 
-        // http://httpd.apache.org/docs/2.2/mod/mod_proxy.html#x-headers
-        setReverseProxyHeaders
-    };
 
     static {
         String jndiRoot = System.getProperty( "httpcomponents.reverseproxy.jndiroot" );
@@ -83,7 +78,7 @@ public class ReverseProxyServlet extends HttpServlet {
     }
 
     private Configuration configuration;
-    private boolean setReverseProxyHeaders;
+    private boolean setXForwarded;
     private ProxyUri proxyUri;
 
     private void copyRequestHeaders( HttpServletRequest servletRequest, HttpRequest proxyRequest ) {
@@ -158,9 +153,9 @@ public class ReverseProxyServlet extends HttpServlet {
             }
         }
 
-        String targetUriString = configuration.get( Keys.targetUri.toString(), String.class );
+        String targetUriString = configuration.get( Key.TARGET_URI, String.class );
         if ( targetUriString == null ) {
-            throw new ServletException( Keys.targetUri.toString() + " is required." );
+            throw new ServletException( Key.TARGET_URI.key() + " is required." );
         }
 
         try {
@@ -170,10 +165,10 @@ public class ReverseProxyServlet extends HttpServlet {
             throw new ServletException( "Trying to process targetUri init parameter: " + e, e );
         }
 
-        Boolean setReverseProxyHeaders = configuration.get( 
-                Keys.setReverseProxyHeaders.toString(), Boolean.class );
-        this.setReverseProxyHeaders = setReverseProxyHeaders == null 
-                ? true : setReverseProxyHeaders;
+        Boolean setXForwarded = configuration.get( 
+                Key.SET_X_FORWARDED, Boolean.class );
+        this.setXForwarded = setXForwarded == null 
+                ? true : setXForwarded;
     }
 
     private HttpClient newHttpClient( HttpServletRequest request ) {
@@ -190,10 +185,10 @@ public class ReverseProxyServlet extends HttpServlet {
                 getServletContext().getAttribute(
                         HttpClientFactoryServletContextListener.HTTP_CLIENT_FACTORY );
         if ( httpClientFactory == null ) {
-            httpClientFactory = new HttpClientFactory();
+            httpClientFactory = new DefaultHttpClientFactory();
         }
 
-        return httpClientFactory.newInstance( configuration, cookies );
+        return httpClientFactory.create( configuration, cookies );
     }
 
     @Override
@@ -229,21 +224,13 @@ public class ReverseProxyServlet extends HttpServlet {
 
         copyRequestHeaders( servletRequest, proxyRequest );
 
-        if ( setReverseProxyHeaders ) {
+        if ( setXForwarded ) {
             setReverseProxyHeaders( servletRequest, proxyRequest );
         }
 
         HttpResponse proxyResponse = null;
         try {
             // Execute the request
-            if ( logger.isInfoEnabled() ) {
-                logger.info( "proxy {} uri: {} --- {}", new Object[] {
-                        method,
-                        servletRequest.getRequestURI(),
-                        proxyRequest.getRequestLine().getUri()
-                } );
-            }
-
             Audit.request( servletRequest, proxyRequest );
             proxyResponse = newHttpClient( servletRequest ).execute(
                     proxyUri.getHost(), proxyRequest );
@@ -338,6 +325,9 @@ public class ReverseProxyServlet extends HttpServlet {
         
         setReverseProxyHeader( servletRequest, proxyRequest, "X-Forwarded-Server",
                 servletRequest.getServerName() );
+        
+        setReverseProxyHeader( servletRequest, proxyRequest, "X-Forwarded-Proto",
+                servletRequest.getScheme() );
     }
         
     private void setReverseProxyHeader( HttpServletRequest servletRequest,
@@ -406,6 +396,23 @@ public class ReverseProxyServlet extends HttpServlet {
                 }
             }
             return headerGroup;
+        }
+    }
+
+    public static enum Key implements com.pastdev.httpcomponents.configuration.Key {
+        TARGET_URI( "targetUri" ), 
+        // http://httpd.apache.org/docs/2.2/mod/mod_proxy.html#x-headers
+        SET_X_FORWARDED( "setXForwarded" );
+
+        private String key;
+
+        private Key( String key ) {
+            this.key = key;
+        }
+
+        @Override
+        public String key() {
+            return key;
         }
     }
 }
