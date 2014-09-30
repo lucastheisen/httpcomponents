@@ -6,7 +6,6 @@ import java.util.Map;
 
 
 public class MapConfiguration implements Configuration {
-    private Configuration fallback;
     private Map<String, Object> map;
 
     public MapConfiguration() {
@@ -17,8 +16,8 @@ public class MapConfiguration implements Configuration {
         this.map = map;
     }
 
-    public MapConfiguration add( Enum<?> key, Object value ) {
-        return add( key.name(), value );
+    public MapConfiguration add( Key key, Object value ) {
+        return add( key.key(), value );
     }
 
     public MapConfiguration add( String key, Object value ) {
@@ -33,9 +32,7 @@ public class MapConfiguration implements Configuration {
 
     @Override
     public <T> T get( String key, Class<T> type ) {
-        return (fallback == null || map.containsKey( key ))
-                ? type.cast( map.get( key ) )
-                : fallback.get( key, type );
+        return type.cast( map.get( key ) );
     }
 
     @Override
@@ -45,11 +42,6 @@ public class MapConfiguration implements Configuration {
 
     @Override
     public Boolean has( String key ) {
-        return map.containsKey( key )
-                || (fallback != null && fallback.has( key ));
-    }
-
-    public void setFallback( Configuration configuration ) {
-        this.fallback = configuration;
+        return map.containsKey( key );
     }
 }

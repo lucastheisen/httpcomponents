@@ -6,15 +6,16 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 
-import com.pastdev.httpcomponents.configuration.Configuration;
-import com.pastdev.httpcomponents.configuration.InitParameterConfiguration;
-import com.pastdev.httpcomponents.configuration.JndiConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 import com.pastdev.http.client.TunnelCapableHttpClientFactory;
 import com.pastdev.http.client.TunnelConnectionManagerFactory;
+import com.pastdev.httpcomponents.configuration.Configuration;
+import com.pastdev.httpcomponents.configuration.ConfigurationChain;
+import com.pastdev.httpcomponents.configuration.InitParameterConfiguration;
+import com.pastdev.httpcomponents.configuration.JndiConfiguration;
 import com.pastdev.jsch.tunnel.TunnelConnectionManager;
 
 
@@ -41,13 +42,15 @@ public class HttpClientFactoryServletContextListener
     @Override
     public void contextInitialized( ServletContextEvent sce ) {
         if ( configuration == null ) {
-            Configuration initParamConfiguration = new InitParameterConfiguration( 
+            Configuration initParamConfiguration = new InitParameterConfiguration(
                     sce.getServletContext() );
             try {
                 logger.debug( "Loading configuration from {}",
                         JNDI_ROOT );
-                configuration = new JndiConfiguration( JNDI_ROOT );
-                configuration.setFallback( initParamConfiguration );
+                configuration = ConfigurationChain
+                        .primaryConfiguration(
+                                new JndiConfiguration( JNDI_ROOT ) )
+                        .fallbackTo( initParamConfiguration );
             }
             catch ( NamingException e ) {
                 logger.trace( "Error loading JndiConfiguration:", e );

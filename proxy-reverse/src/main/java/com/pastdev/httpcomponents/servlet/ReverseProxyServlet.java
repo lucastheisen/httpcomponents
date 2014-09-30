@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import com.pastdev.http.client.DefaultHttpClientFactory;
 import com.pastdev.http.client.HttpClientFactory;
 import com.pastdev.httpcomponents.configuration.Configuration;
+import com.pastdev.httpcomponents.configuration.ConfigurationChain;
 import com.pastdev.httpcomponents.configuration.InitParameterConfiguration;
 import com.pastdev.httpcomponents.configuration.JndiConfiguration;
 import com.pastdev.httpcomponents.util.ProxyUri;
@@ -144,9 +145,11 @@ public class ReverseProxyServlet extends HttpServlet {
                                 "UTF-8" );
                 logger.debug( "no configuration specified, loading from {}",
                         jndiRoot );
-                configuration = new JndiConfiguration( jndiRoot );
-                configuration.setFallback(
-                        new InitParameterConfiguration( servletConfig ) );
+                configuration = ConfigurationChain
+                        .primaryConfiguration(
+                                new JndiConfiguration( JNDI_ROOT ) )
+                        .fallbackTo(
+                                new InitParameterConfiguration( servletConfig ) );
             }
             catch ( UnsupportedEncodingException | NamingException e ) {
                 throw new IllegalStateException( "unable to load JndiConfiguration" );
@@ -165,9 +168,9 @@ public class ReverseProxyServlet extends HttpServlet {
             throw new ServletException( "Trying to process targetUri init parameter: " + e, e );
         }
 
-        Boolean setXForwarded = configuration.get( 
+        Boolean setXForwarded = configuration.get(
                 Key.SET_X_FORWARDED, Boolean.class );
-        this.setXForwarded = setXForwarded == null 
+        this.setXForwarded = setXForwarded == null
                 ? true : setXForwarded;
     }
 
@@ -303,9 +306,9 @@ public class ReverseProxyServlet extends HttpServlet {
             HttpRequest proxyRequest ) {
         // http://stackoverflow.com/q/19084340/516433
         // http://httpd.apache.org/docs/2.2/mod/mod_proxy.html#x-headers
-        setReverseProxyHeader( servletRequest, proxyRequest, "X-Forwarded-For", 
+        setReverseProxyHeader( servletRequest, proxyRequest, "X-Forwarded-For",
                 servletRequest.getRemoteAddr() );
-        
+
         String host = servletRequest.getHeader( "Host" );
         if ( host == null ) {
             int port = servletRequest.getServerPort();
@@ -320,16 +323,16 @@ public class ReverseProxyServlet extends HttpServlet {
                 host = servletRequest.getServerName();
             }
         }
-        setReverseProxyHeader( servletRequest, proxyRequest, "X-Forwarded-Host", 
+        setReverseProxyHeader( servletRequest, proxyRequest, "X-Forwarded-Host",
                 host );
-        
+
         setReverseProxyHeader( servletRequest, proxyRequest, "X-Forwarded-Server",
                 servletRequest.getServerName() );
-        
+
         setReverseProxyHeader( servletRequest, proxyRequest, "X-Forwarded-Proto",
                 servletRequest.getScheme() );
     }
-        
+
     private void setReverseProxyHeader( HttpServletRequest servletRequest,
             HttpRequest proxyRequest, String name, String value ) {
         String existingHeader = servletRequest.getHeader( name );
@@ -400,9 +403,9 @@ public class ReverseProxyServlet extends HttpServlet {
     }
 
     public static enum Key implements com.pastdev.httpcomponents.configuration.Key {
-        TARGET_URI( "targetUri" ), 
+        TARGET_URI("targetUri"),
         // http://httpd.apache.org/docs/2.2/mod/mod_proxy.html#x-headers
-        SET_X_FORWARDED( "setXForwarded" );
+        SET_X_FORWARDED("setXForwarded");
 
         private String key;
 

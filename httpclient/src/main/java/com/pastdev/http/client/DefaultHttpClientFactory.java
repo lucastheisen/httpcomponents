@@ -8,32 +8,54 @@ import org.apache.http.impl.client.HttpClientBuilder;
 
 
 import com.pastdev.httpcomponents.configuration.Configuration;
+import com.pastdev.httpcomponents.configuration.ConfigurationChain;
+import com.pastdev.httpcomponents.configuration.MapConfiguration;
 
 
 public class DefaultHttpClientFactory implements HttpClientFactory {
+    private Configuration defaultConfiguration;
+
     @Override
-    public HttpClient create() {
+    final public HttpClient create() {
         return create( null, null );
     }
 
     @Override
-    public HttpClient create( CookieStore cookieStore ) {
+    final public HttpClient create( CookieStore cookieStore ) {
         return create( null, cookieStore );
     }
 
     @Override
-    public HttpClient create( Configuration configuration ) {
+    final public HttpClient create( Configuration configuration ) {
         return create( configuration, null );
     }
 
     @Override
-    public HttpClient create( Configuration configuration, CookieStore cookies ) {
+    final public HttpClient create( Configuration configuration, CookieStore cookies ) {
+        if ( defaultConfiguration == null ) {
+            defaultConfiguration = new MapConfiguration();
+        }
+
+        if ( configuration == null ) {
+            configuration = defaultConfiguration;
+        }
+        else {
+            configuration = ConfigurationChain
+                    .primaryConfiguration( configuration )
+                    .fallbackTo( defaultConfiguration );
+        }
+
+        return createClient( configuration, cookies );
+    }
+
+    protected HttpClient createClient( Configuration configuration,
+            CookieStore cookies ) {
         HttpClientBuilder builder = HttpClientBuilder.create();
         if ( cookies != null ) {
             builder.setDefaultCookieStore( cookies );
         }
 
-        String redirectsEnabled = configuration.get( Key.HANDLE_REDIRECTS, 
+        String redirectsEnabled = configuration.get( Key.HANDLE_REDIRECTS,
                 String.class );
         RequestConfig.Builder requestConfigBuilder = RequestConfig.custom();
         if ( redirectsEnabled != null ) {
@@ -45,6 +67,10 @@ public class DefaultHttpClientFactory implements HttpClientFactory {
         builder.setDefaultRequestConfig( requestConfigBuilder.build() );
 
         return builder.build();
+    }
+
+    public void setDefault( Configuration defaultConfiguration ) {
+        this.defaultConfiguration = defaultConfiguration;
     }
 
     public enum Key implements com.pastdev.httpcomponents.configuration.Key {

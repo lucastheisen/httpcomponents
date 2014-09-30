@@ -9,6 +9,4 @@ public interface Configuration {
     public Boolean has( Key key );
 
     public Boolean has( String key );
-    
-    public void setFallback( Configuration configuration );
 }

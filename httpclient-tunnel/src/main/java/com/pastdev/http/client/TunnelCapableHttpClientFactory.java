@@ -23,14 +23,13 @@ import org.slf4j.LoggerFactory;
 
 
 import com.jcraft.jsch.JSchException;
-import com.pastdev.http.client.DefaultHttpClientFactory.Key;
 import com.pastdev.httpcomponents.configuration.Configuration;
 import com.pastdev.httpcomponents.configuration.MapConfiguration;
 import com.pastdev.jsch.tunnel.Tunnel;
 import com.pastdev.jsch.tunnel.TunnelConnectionManager;
 
 
-public class TunnelCapableHttpClientFactory implements HttpClientFactory {
+public class TunnelCapableHttpClientFactory extends DefaultHttpClientFactory {
     private static Logger logger = LoggerFactory.getLogger( TunnelCapableHttpClientFactory.class );
     public static final Configuration DEFAULT_CONFIGURATION = new MapConfiguration();
 
@@ -53,22 +52,7 @@ public class TunnelCapableHttpClientFactory implements HttpClientFactory {
     }
 
     @Override
-    public HttpClient create() {
-        return create( DEFAULT_CONFIGURATION );
-    }
-
-    @Override
-    public HttpClient create( CookieStore cookieStore ) {
-        return create( DEFAULT_CONFIGURATION, cookieStore );
-    }
-
-    @Override
-    public HttpClient create( Configuration configuration ) {
-        return create( configuration, null );
-    }
-
-    @Override
-    public HttpClient create( Configuration configuration, 
+    public HttpClient createClient( Configuration configuration, 
             CookieStore cookies ) {
         builder = HttpClientBuilder.create();
         if ( cookies != null ) {
