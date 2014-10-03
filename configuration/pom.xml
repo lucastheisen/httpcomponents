@@ -13,4 +13,12 @@
 
   <name>Configuration</name>
   <description>An abstraction for providing configuration</description>
+  
+  <dependencies>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
 </project>

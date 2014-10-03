@@ -61,8 +61,10 @@ public class HttpClientFactoryServletContextListener
 
         tunnelConnectionManager = TunnelConnectionManagerFactory
                 .newInstance( configuration );
-        TunnelCapableHttpClientFactory httpClientFactory = new TunnelCapableHttpClientFactory();
+        TunnelCapableHttpClientFactory httpClientFactory = 
+                new TunnelCapableHttpClientFactory();
         httpClientFactory.setTunnelConnectionManager( tunnelConnectionManager );
+        httpClientFactory.setDefault( configuration );
         sce.getServletContext().setAttribute( HTTP_CLIENT_FACTORY,
                 httpClientFactory );
     }

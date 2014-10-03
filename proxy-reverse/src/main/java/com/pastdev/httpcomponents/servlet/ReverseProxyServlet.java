@@ -2,7 +2,6 @@ package com.pastdev.httpcomponents.servlet;
 
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -18,8 +17,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
@@ -50,10 +47,10 @@ import com.pastdev.httpcomponents.util.ProxyUri;
 public class ReverseProxyServlet extends HttpServlet {
     private static final long serialVersionUID = 9091933627516767566L;
     private static Logger logger = LoggerFactory.getLogger( ReverseProxyServlet.class );
-    /* http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1 */
-    private static final HeaderGroup HOB_BY_HOP_HEADERS;
 
     public static final String ATTRIBUTE_COOKIE_STORE = "cookieStore";
+    /* http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1 */
+    public static final HeaderGroup HOB_BY_HOP_HEADERS;
     public static final String JNDI_ROOT;
 
     static {
@@ -81,6 +78,8 @@ public class ReverseProxyServlet extends HttpServlet {
     private Configuration configuration;
     private boolean setXForwarded;
     private ProxyUri proxyUri;
+    private ReverseProxyResponseHandler responseHandler =
+            new DefaultReverseProxyResponseHandler();
 
     private void copyRequestHeaders( HttpServletRequest servletRequest, HttpRequest proxyRequest ) {
         Enumeration<String> headerNames = servletRequest.getHeaderNames();
@@ -110,23 +109,6 @@ public class ReverseProxyServlet extends HttpServlet {
                 }
                 proxyRequest.addHeader( headerName, headerValue );
             }
-        }
-    }
-
-    private void copyResponseEntity( HttpResponse proxyResponse,
-            HttpServletResponse servletResponse ) throws IOException {
-        HttpEntity entity = proxyResponse.getEntity();
-        if ( entity != null ) {
-            OutputStream servletOutputStream = servletResponse.getOutputStream();
-            entity.writeTo( servletOutputStream );
-        }
-    }
-
-    private void copyResponseHeaders( HttpResponse proxyResponse, HttpServletResponse servletResponse ) {
-        for ( Header header : proxyResponse.getAllHeaders() ) {
-            if ( HOB_BY_HOP_HEADERS.containsHeader( header.getName() ) )
-                continue;
-            servletResponse.addHeader( header.getName(), header.getValue() );
         }
     }
 
@@ -165,13 +147,31 @@ public class ReverseProxyServlet extends HttpServlet {
             proxyUri = new ProxyUri( targetUriString );
         }
         catch ( URISyntaxException e ) {
-            throw new ServletException( "Trying to process targetUri init parameter: " + e, e );
+            throw new ServletException(
+                    "Trying to process targetUri init parameter: "
+                            + e.getMessage(),
+                    e );
         }
 
         Boolean setXForwarded = configuration.get(
                 Key.SET_X_FORWARDED, Boolean.class );
         this.setXForwarded = setXForwarded == null
                 ? true : setXForwarded;
+
+        Class<?> responseHandlerClass = configuration.get(
+                Key.RESPONSE_HANDLER_CLASS, Class.class );
+        if ( responseHandlerClass != null ) {
+            try {
+                responseHandler = (ReverseProxyResponseHandler) 
+                        responseHandlerClass.newInstance();
+            }
+            catch ( InstantiationException | IllegalAccessException | ClassCastException e ) {
+                throw new ServletException(
+                        "Unable to construct responseHandler: "
+                                + e.getMessage(),
+                        e );
+            }
+        }
     }
 
     private HttpClient newHttpClient( HttpServletRequest request ) {
@@ -234,65 +234,34 @@ public class ReverseProxyServlet extends HttpServlet {
         HttpResponse proxyResponse = null;
         try {
             // Execute the request
-            Audit.request( servletRequest, proxyRequest );
-            proxyResponse = newHttpClient( servletRequest ).execute(
-                    proxyUri.getHost(), proxyRequest );
+            ReverseProxyAudit.request( servletRequest, proxyRequest );
 
-            copyResponseHeaders( proxyResponse, servletResponse );
-
-            // Process the response
-            int statusCode = proxyResponse.getStatusLine().getStatusCode();
-            if ( statusCode > HttpServletResponse.SC_BAD_REQUEST ) {
-                // errors
-                String reason = proxyResponse.getStatusLine().getReasonPhrase();
-                servletResponse.sendError( statusCode, reason );
-                Audit.response( servletResponse, proxyResponse );
-                return;
-            }
-            else if ( statusCode > HttpServletResponse.SC_MULTIPLE_CHOICES ) {
-                // redirects
-                if ( statusCode == HttpServletResponse.SC_NOT_MODIFIED ) {
-                    // not really redirecting anywhere...
-                    servletResponse.setIntHeader( HttpHeaders.CONTENT_LENGTH, 0 );
-                }
-                else {
-                    Header locationHeader = proxyResponse.getLastHeader( HttpHeaders.LOCATION );
-                    if ( locationHeader == null ) {
-                        throw new ServletException( "Received status code: "
-                                + statusCode + " but no " + HttpHeaders.LOCATION
-                                + " header was found in the response" );
-                    }
-                    String location = proxyUri.rewriteResponseLocation(
-                            servletRequest, locationHeader.getValue() );
-                    servletResponse.sendRedirect( location );
-                    Audit.response( servletResponse, proxyResponse );
-                    return;
-                }
-            }
-
-            // successes
-            servletResponse.setStatus( statusCode );
-            copyResponseEntity( proxyResponse, servletResponse );
-            Audit.response( servletResponse, proxyResponse );
+            HttpClient client = newHttpClient( servletRequest );
+            proxyResponse = client.execute( proxyUri.getHost(), proxyRequest );
+            responseHandler.handle( proxyUri, servletRequest, servletResponse,
+                    client, proxyResponse );
         }
         catch ( Exception e ) {
             if ( proxyRequest instanceof AbstractExecutionAwareRequest ) {
-                AbstractExecutionAwareRequest abortableHttpRequest = (AbstractExecutionAwareRequest) proxyRequest;
-                abortableHttpRequest.abort();
+                ((AbstractExecutionAwareRequest) proxyRequest).abort();
             }
+
             if ( e instanceof RuntimeException ) {
                 throw (RuntimeException) e;
             }
-            if ( e instanceof ServletException ) {
+            else if ( e instanceof ServletException ) {
                 throw (ServletException) e;
             }
-            if ( e instanceof IOException ) {
+            else if ( e instanceof IOException ) {
                 throw (IOException) e;
             }
-            throw new RuntimeException( e );
+            else {
+                throw new RuntimeException( e );
+            }
         }
         finally {
             if ( proxyResponse != null ) {
+                // ensure response is completely processed
                 EntityUtils.consumeQuietly( proxyResponse.getEntity() );
             }
         }
@@ -300,6 +269,11 @@ public class ReverseProxyServlet extends HttpServlet {
 
     public void setConfiguration( Configuration configuration ) {
         this.configuration = configuration;
+    }
+
+    public void setReverseProxyResponseHandler(
+            ReverseProxyResponseHandler responseHandler ) {
+        this.responseHandler = responseHandler;
     }
 
     private void setReverseProxyHeaders( HttpServletRequest servletRequest,
@@ -342,70 +316,11 @@ public class ReverseProxyServlet extends HttpServlet {
         proxyRequest.setHeader( name, value );
     }
 
-    private static class Audit {
-        public static Logger logger = LoggerFactory.getLogger( Audit.class );
-
-        public static void request( HttpServletRequest request,
-                HttpRequest proxyRequest ) {
-            if ( logger.isInfoEnabled() ) {
-                StringBuilder requestStringBuilder = new StringBuilder();
-                requestStringBuilder.append( request.getMethod() )
-                        .append( " " );
-                requestStringBuilder.append( request.getRequestURL() );
-                String queryString = request.getQueryString();
-                if ( queryString != null && !queryString.isEmpty() ) {
-                    requestStringBuilder.append( queryString );
-                }
-                requestStringBuilder.append( " " )
-                        .append( toHeaderGroup( request ) );
-
-                logger.info( "Request:\n\tto proxy:  {}\n\tto server: {}",
-                        requestStringBuilder, proxyRequest );
-            }
-        }
-
-        public static void response( HttpServletResponse servletResponse, HttpResponse proxyResponse ) {
-            if ( logger.isInfoEnabled() ) {
-                StringBuilder responseStringBuilder = new StringBuilder()
-                        .append( servletResponse.getStatus() )
-                        .append( " " )
-                        .append( toHeaderGroup( servletResponse ) );
-                logger.info( "Response:\n\tfrom server: {}\n\tfrom proxy:  {}",
-                        proxyResponse, responseStringBuilder );
-            }
-        }
-
-        private static HeaderGroup toHeaderGroup( HttpServletRequest request ) {
-            HeaderGroup headerGroup = new HeaderGroup();
-            Enumeration<String> headerNames = request.getHeaderNames();
-            while ( headerNames.hasMoreElements() ) {
-                String headerName = headerNames.nextElement();
-                Enumeration<String> headerValues =
-                        request.getHeaders( headerName );
-                while ( headerValues.hasMoreElements() ) {
-                    headerGroup.addHeader( new BasicHeader(
-                            headerName, headerValues.nextElement() ) );
-                }
-            }
-            return headerGroup;
-        }
-
-        private static HeaderGroup toHeaderGroup( HttpServletResponse request ) {
-            HeaderGroup headerGroup = new HeaderGroup();
-            for ( String headerName : request.getHeaderNames() ) {
-                for ( String headerValue : request.getHeaders( headerName ) ) {
-                    headerGroup.addHeader( new BasicHeader(
-                            headerName, headerValue ) );
-                }
-            }
-            return headerGroup;
-        }
-    }
-
     public static enum Key implements com.pastdev.httpcomponents.configuration.Key {
-        TARGET_URI("targetUri"),
+        RESPONSE_HANDLER_CLASS("responseHandler"),
         // http://httpd.apache.org/docs/2.2/mod/mod_proxy.html#x-headers
-        SET_X_FORWARDED("setXForwarded");
+        SET_X_FORWARDED("setXForwarded"),
+        TARGET_URI("targetUri");
 
         private String key;
 

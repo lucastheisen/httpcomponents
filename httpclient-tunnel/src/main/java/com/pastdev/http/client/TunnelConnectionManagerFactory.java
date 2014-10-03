@@ -46,9 +46,9 @@ public class TunnelConnectionManagerFactory {
     }
 
     public static enum Key implements com.pastdev.httpcomponents.configuration.Key {
-        TUNNEL("tunnel"),
-        KNOWN_HOSTS("knownHosts"),
-        IDENTITY("identity");
+        TUNNEL("tunnel.tunnel"),
+        KNOWN_HOSTS("tunnel.knownHosts"),
+        IDENTITY("tunnel.identity");
 
         private String key;
 

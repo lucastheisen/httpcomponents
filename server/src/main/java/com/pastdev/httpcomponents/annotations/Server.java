@@ -29,5 +29,7 @@ public @interface Server {
 
     public Servlet[] servlets() default {};
     
+    public String sessionCookieName() default "";
+    
     public ServletContextListener[] servletContextListeners() default {};
 }

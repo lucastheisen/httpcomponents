@@ -71,6 +71,10 @@ public class ProxyUri {
     public int getPort() {
         return proxyHost.getPort();
     }
+    
+    public URI getUri() {
+        return proxyUri;
+    }
 
     public URI rewriteRequestUri( HttpServletRequest servletRequest )
             throws URISyntaxException {
@@ -79,12 +83,20 @@ public class ProxyUri {
                 ? new URI( servletRequest.getRequestURL().toString() )
                 : new URI( servletRequest.getRequestURL().toString() + "?"
                         + queryString );
+        return rewriteRequestUri( requestUri, servletRequest.getContextPath() );
+    }
 
+    public URI rewriteRequestUri( URI requestUri )
+            throws URISyntaxException {
+        return rewriteRequestUri( requestUri, null );
+    }
+
+    public URI rewriteRequestUri( URI requestUri, String contextPath )
+            throws URISyntaxException {
         String requestPath = requestUri.getPath();
-        String contextPath = servletRequest.getContextPath();
         if ( contextPath != null && !contextPath.isEmpty() ) {
             // strip context path from path as context is only for this servlet
-            if ( ! requestPath.startsWith( contextPath ) ) {
+            if ( !requestPath.startsWith( contextPath ) ) {
                 throw new IllegalStateException( "request path ["
                         + requestPath + "] does not begin with context path ["
                         + contextPath + "]" );

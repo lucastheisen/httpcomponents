@@ -16,6 +16,14 @@ public class DefaultEnvironmentValueFactory implements EnvironmentValueFactory {
         if ( serverRef != null && !serverRef.isEmpty() ) {
             return serverValue( servers, environment.serverRef(), environment.value() );
         }
+        else if ( environment.type() == Class.class ) {
+            try {
+                return (T) Class.forName( environment.value() );
+            }
+            catch ( ClassNotFoundException e ) {
+                throw new IllegalArgumentException( e.getMessage(), e );
+            }
+        }
         else {
             return (T) ValueOfValueFactory.valueOf( environment.value(), environment.type() );
         }

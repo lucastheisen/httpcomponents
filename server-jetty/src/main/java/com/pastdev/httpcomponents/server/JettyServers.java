@@ -121,10 +121,16 @@ public class JettyServers implements com.pastdev.httpcomponents.server.Servers {
             }
 
             ServletContextHandler handler = new ServletContextHandler();
-            handler.setSessionHandler( new SessionHandler( new HashSessionManager() ) );
-            
+            HashSessionManager sessionManager = new HashSessionManager();
+            String cookieName = config.sessionCookieName();
+            if ( cookieName != null && !cookieName.isEmpty() ) {
+                logger.info( "Setting session cookie name to '{}'", cookieName );
+                sessionManager.getSessionCookieConfig().setName( cookieName );
+            }
+            handler.setSessionHandler( new SessionHandler( sessionManager ) );
+
             String contextPath = config.contextPath();
-            if ( contextPath != null && ! contextPath.isEmpty() ) {
+            if ( contextPath != null && !contextPath.isEmpty() ) {
                 handler.setContextPath( contextPath );
             }
 
