@@ -10,7 +10,7 @@
   <artifactId>server</artifactId>
   <packaging>jar</packaging>
 
-  <name>Configuration</name>
+  <name>Server</name>
   <description>A set of interfaces and factories for building servers.</description>
   
   <dependencies>
