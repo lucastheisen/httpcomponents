@@ -80,6 +80,7 @@ public class ReverseProxyServlet extends HttpServlet {
     private ProxyUri proxyUri;
     private ReverseProxyResponseHandler responseHandler =
             new DefaultReverseProxyResponseHandler();
+    private ProxyRequestPreprocessor proxyRequestPreprocessor;
 
     private void copyRequestHeaders( HttpServletRequest servletRequest, HttpRequest proxyRequest ) {
         Enumeration<String> headerNames = servletRequest.getHeaderNames();
@@ -162,12 +163,27 @@ public class ReverseProxyServlet extends HttpServlet {
                 Key.RESPONSE_HANDLER_CLASS, Class.class );
         if ( responseHandlerClass != null ) {
             try {
-                responseHandler = (ReverseProxyResponseHandler) 
+                responseHandler = (ReverseProxyResponseHandler)
                         responseHandlerClass.newInstance();
             }
             catch ( InstantiationException | IllegalAccessException | ClassCastException e ) {
                 throw new ServletException(
                         "Unable to construct responseHandler: "
+                                + e.getMessage(),
+                        e );
+            }
+        }
+
+        Class<?> proxyRequestPreprocessorClass = configuration.get(
+                Key.PROXY_REQUEST_PREPROCESSOR_CLASS, Class.class );
+        if ( proxyRequestPreprocessorClass != null ) {
+            try {
+                proxyRequestPreprocessor = (ProxyRequestPreprocessor)
+                        proxyRequestPreprocessorClass.newInstance();
+            }
+            catch ( InstantiationException | IllegalAccessException | ClassCastException e ) {
+                throw new ServletException(
+                        "Unable to construct proxyRequestPreprocessor: "
                                 + e.getMessage(),
                         e );
             }
@@ -229,6 +245,10 @@ public class ReverseProxyServlet extends HttpServlet {
 
         if ( setXForwarded ) {
             setReverseProxyHeaders( servletRequest, proxyRequest );
+        }
+
+        if ( proxyRequestPreprocessor != null ) {
+            proxyRequestPreprocessor.preProcess( servletRequest, proxyRequest );
         }
 
         HttpResponse proxyResponse = null;
@@ -317,10 +337,11 @@ public class ReverseProxyServlet extends HttpServlet {
     }
 
     public static enum Key implements com.pastdev.httpcomponents.configuration.Key {
+        PROXY_REQUEST_PREPROCESSOR_CLASS("proxyRequestPreprocessor"),
         RESPONSE_HANDLER_CLASS("responseHandler"),
         // http://httpd.apache.org/docs/2.2/mod/mod_proxy.html#x-headers
         SET_X_FORWARDED("setXForwarded"),
-        TARGET_URI("targetUri");
+        TARGET_URI("targetUri"); 
 
         private String key;
 

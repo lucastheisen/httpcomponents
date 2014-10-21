@@ -45,7 +45,7 @@ public class InitParameterConfiguration extends MapConfiguration {
     @Override
     public <T> T get( String key, Class<T> type ) {
         String value = super.get( key, String.class );
-        if ( type == String.class ) {
+        if ( value == null || type == String.class ) {
             return type.cast( value );
         }
         else if ( type == Class.class ) {

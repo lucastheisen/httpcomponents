@@ -30,7 +30,7 @@ public class ConfigurationChain implements Configuration {
     @Override
     public <T> T get( String key, Class<T> type ) {
         T value = null;
-        if ( chain != null || !chain.isEmpty() ) {
+        if ( chain != null ) {
             for ( Configuration configuration : chain ) {
                 value = configuration.get( key, type );
                 if ( value != null ) {
