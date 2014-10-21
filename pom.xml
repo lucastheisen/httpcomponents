@@ -10,7 +10,7 @@
 
   <groupId>com.pastdev.httpcomponents</groupId>
   <artifactId>project</artifactId>
-  <version>0.0.6</version>
+  <version>0.0.7-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>HttpComponents</name>
@@ -30,7 +30,7 @@
     <connection>scm:git:git://github.com/lucastheisen/httpcomponents.git</connection>
     <developerConnection>scm:git:git@github.com:lucastheisen/httpcomponents.git</developerConnection>
     <url>http://github.com/lucastheisen/httpcomponents</url>
-    <tag>project-0.0.6</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <organization>
