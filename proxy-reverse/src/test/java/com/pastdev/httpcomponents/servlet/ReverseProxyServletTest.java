@@ -60,10 +60,15 @@ public class ReverseProxyServletTest {
                             name = "Proxy Servlet",
                             type = ReverseProxyServlet.class,
                             configuration = @Configuration(
-                                    environment = { @Environment(
-                                            name = "targetUri",
-                                            serverRef = "hello",
-                                            value = "uriString" ) } ) ) } ) } )
+                                    environment = {
+                                            @Environment(
+                                                    name = "setXRequestId",
+                                                    type = java.lang.Boolean.class,
+                                                    value = "true" ),
+                                            @Environment(
+                                                    name = "targetUri",
+                                                    serverRef = "hello",
+                                                    value = "uriString" ) } ) ) } ) } )
     public void testWithoutTunnel() throws Exception {
         logger.debug( "hello world!" );
         HttpClient client = HttpClientBuilder.create().build();

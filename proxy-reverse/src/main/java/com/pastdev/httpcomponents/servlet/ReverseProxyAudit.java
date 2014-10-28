@@ -23,31 +23,50 @@ public class ReverseProxyAudit {
     public static void request( HttpServletRequest request,
             HttpRequest proxyRequest ) {
         if ( logger.isInfoEnabled() ) {
-            StringBuilder requestStringBuilder = new StringBuilder();
-            requestStringBuilder.append( request.getMethod() )
-                    .append( " " );
-            requestStringBuilder.append( request.getRequestURL() );
+            String requestId = (String) request.getAttribute(
+                    ReverseProxyServlet.REQUEST_ATTRIBUTE_X_REQUEST_ID );
+
+            StringBuilder requestStringBuilder = new StringBuilder( "Request" );
+            if ( requestId != null ) {
+                requestStringBuilder.append( " (" ).append( requestId )
+                        .append( ")" );
+            }
+            requestStringBuilder.append( ":\n\tto proxy: " )
+                    .append( request.getMethod() )
+                    .append( " " )
+                    .append( request.getRequestURL() );
             String queryString = request.getQueryString();
             if ( queryString != null && !queryString.isEmpty() ) {
                 requestStringBuilder.append( queryString );
             }
             requestStringBuilder.append( " " )
-                    .append( toHeaderGroup( request ) );
+                    .append( toHeaderGroup( request ) )
+                    .append( "\n\tto server: " )
+                    .append( proxyRequest.toString() );
 
-            logger.info( "Request:\n\tto proxy:  {}\n\tto server: {}",
-                    requestStringBuilder, proxyRequest );
+            logger.info( requestStringBuilder.toString() );
         }
     }
 
-    public static void response( HttpServletResponse servletResponse, 
-            HttpResponse proxyResponse ) {
+    public static void response( HttpServletRequest request,
+            HttpServletResponse servletResponse, HttpResponse proxyResponse ) {
         if ( logger.isInfoEnabled() ) {
-            StringBuilder responseStringBuilder = new StringBuilder()
+            String requestId = (String) request.getAttribute(
+                    ReverseProxyServlet.REQUEST_ATTRIBUTE_X_REQUEST_ID );
+
+            StringBuilder responseStringBuilder = new StringBuilder( "Response" );
+            if ( requestId != null ) {
+                responseStringBuilder.append( " (" ).append( requestId )
+                        .append( ")" );
+            }
+            responseStringBuilder.append( ":\n\tfrom server: " )
+                    .append( proxyResponse )
+                    .append( "\n\tfrom proxy: " )
                     .append( servletResponse.getStatus() )
                     .append( " " )
                     .append( toHeaderGroup( servletResponse ) );
-            logger.info( "Response:\n\tfrom server: {}\n\tfrom proxy:  {}",
-                    proxyResponse, responseStringBuilder );
+
+            logger.info( responseStringBuilder.toString() );
         }
     }
 

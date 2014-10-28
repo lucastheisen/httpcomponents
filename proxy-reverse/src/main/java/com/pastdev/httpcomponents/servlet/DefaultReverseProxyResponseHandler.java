@@ -40,7 +40,8 @@ public class DefaultReverseProxyResponseHandler implements ReverseProxyResponseH
             // errors
             String reason = proxyResponse.getStatusLine().getReasonPhrase();
             servletResponse.sendError( statusCode, reason );
-            ReverseProxyAudit.response( servletResponse, proxyResponse );
+            ReverseProxyAudit.response( servletRequest, servletResponse, 
+                    proxyResponse );
             return;
         }
         else if ( statusCode > HttpServletResponse.SC_MULTIPLE_CHOICES ) {
@@ -59,15 +60,18 @@ public class DefaultReverseProxyResponseHandler implements ReverseProxyResponseH
                 String location = proxyUri.rewriteResponseLocation(
                         servletRequest, locationHeader.getValue() );
                 servletResponse.sendRedirect( location );
-                ReverseProxyAudit.response( servletResponse, proxyResponse );
+                ReverseProxyAudit.response( servletRequest, servletResponse, 
+                        proxyResponse );
                 return;
             }
         }
 
         // successes
         servletResponse.setStatus( statusCode );
-        ReverseProxyResponseUtil.copyResponseEntity( proxyResponse, servletResponse );
-        ReverseProxyAudit.response( servletResponse, proxyResponse );
+        ReverseProxyResponseUtil.copyResponseEntity( proxyResponse, 
+                servletResponse );
+        ReverseProxyAudit.response( servletRequest, servletResponse, 
+                proxyResponse );
     }
 
     @Override

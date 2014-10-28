@@ -6,6 +6,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.Enumeration;
+import java.util.UUID;
 
 
 import javax.naming.NamingException;
@@ -52,6 +53,8 @@ public class ReverseProxyServlet extends HttpServlet {
     /* http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1 */
     public static final HeaderGroup HOB_BY_HOP_HEADERS;
     public static final String JNDI_ROOT;
+    public static final String REQUEST_ATTRIBUTE_X_REQUEST_ID = 
+            ReverseProxyServlet.class.getName() + ".X-Request-ID";
 
     static {
         String jndiRoot = System.getProperty( "httpcomponents.reverseproxy.jndiroot" );
@@ -77,6 +80,7 @@ public class ReverseProxyServlet extends HttpServlet {
 
     private Configuration configuration;
     private boolean setXForwarded;
+    private boolean setXRequestId;
     private ProxyUri proxyUri;
     private ReverseProxyResponseHandler responseHandler =
             new DefaultReverseProxyResponseHandler();
@@ -154,10 +158,17 @@ public class ReverseProxyServlet extends HttpServlet {
                     e );
         }
 
+        // default true
         Boolean setXForwarded = configuration.get(
                 Key.SET_X_FORWARDED, Boolean.class );
         this.setXForwarded = setXForwarded == null
                 ? true : setXForwarded;
+
+        // default false
+        Boolean setXRequestId = configuration.get(
+                Key.SET_X_REQUEST_ID, Boolean.class );
+        this.setXRequestId = setXRequestId == null
+                ? false : setXRequestId;
 
         Class<?> responseHandlerClass = configuration.get(
                 Key.RESPONSE_HANDLER_CLASS, Class.class );
@@ -246,6 +257,11 @@ public class ReverseProxyServlet extends HttpServlet {
         if ( setXForwarded ) {
             setReverseProxyHeaders( servletRequest, proxyRequest );
         }
+        
+        if ( setXRequestId ) {
+            servletRequest.setAttribute( REQUEST_ATTRIBUTE_X_REQUEST_ID,
+                    setRequestIdHeader( servletRequest, proxyRequest ) );
+        }
 
         if ( proxyRequestPreprocessor != null ) {
             proxyRequestPreprocessor.preProcess( servletRequest, proxyRequest );
@@ -289,6 +305,18 @@ public class ReverseProxyServlet extends HttpServlet {
 
     public void setConfiguration( Configuration configuration ) {
         this.configuration = configuration;
+    }
+
+    private String setRequestIdHeader( HttpServletRequest servletRequest,
+            HttpRequest proxyRequest ) {
+        // https://devcenter.heroku.com/articles/http-request-id
+        String name = "X-Request-ID";
+        String value = servletRequest.getHeader( name );
+        if ( value == null ) {
+            value = UUID.randomUUID().toString();
+            proxyRequest.setHeader( name, value );
+        }
+        return value;
     }
 
     public void setReverseProxyResponseHandler(
@@ -340,7 +368,8 @@ public class ReverseProxyServlet extends HttpServlet {
         PROXY_REQUEST_PREPROCESSOR_CLASS("proxyRequestPreprocessor"),
         RESPONSE_HANDLER_CLASS("responseHandler"),
         // http://httpd.apache.org/docs/2.2/mod/mod_proxy.html#x-headers
-        SET_X_FORWARDED("setXForwarded"),
+        SET_X_FORWARDED("setXForwarded"), 
+        SET_X_REQUEST_ID("setXRequestId"),
         TARGET_URI("targetUri"); 
 
         private String key;
