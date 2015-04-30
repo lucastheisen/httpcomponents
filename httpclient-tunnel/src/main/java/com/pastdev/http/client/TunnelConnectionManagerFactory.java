@@ -33,6 +33,12 @@ public class TunnelConnectionManagerFactory {
                             Key.IDENTITY, String.class ) );
                 }
 
+                Configuration config = configuration.getConfiguration( Key.CONFIG );
+                for ( String configKey : config.keySet() ) {
+                    defaultSessionFactory.setConfig( configKey, 
+                            config.get( configKey, String.class ) );
+                }
+
                 tunnelConnectionManager =
                         new TunnelConnectionManager( defaultSessionFactory,
                                 tunnel.trim().split( "\\s+" ) );
@@ -48,7 +54,8 @@ public class TunnelConnectionManagerFactory {
     public static enum Key implements com.pastdev.httpcomponents.configuration.Key {
         TUNNEL("tunnel.tunnel"),
         KNOWN_HOSTS("tunnel.knownHosts"),
-        IDENTITY("tunnel.identity");
+        IDENTITY("tunnel.identity"),
+        CONFIG("tunnel.config");
 
         private String key;
 

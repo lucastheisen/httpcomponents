@@ -55,7 +55,8 @@ public class TunnelCapableHttpClientTest {
             IOException, URISyntaxException, NamingException {
         logger.debug( "testing GET" );
         Configuration configuration = new MapConfiguration()
-                .add( "tunnel", "localhost|localhost:" + server.getPort( "server" ) );
+                .add( "tunnel.tunnel", "localhost|localhost:" + server.getPort( "server" ) )
+                .add( "tunnel.config.PreferredAuthentications", "publickey" );
         TunnelCapableHttpClientFactory httpClientFactory = new TunnelCapableHttpClientFactory();
         httpClientFactory.setTunnelConnectionManager(
                 TunnelConnectionManagerFactory.newInstance( configuration ) );

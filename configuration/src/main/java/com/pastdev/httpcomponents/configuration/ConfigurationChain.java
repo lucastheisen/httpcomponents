@@ -2,21 +2,23 @@ package com.pastdev.httpcomponents.configuration;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 public class ConfigurationChain implements Configuration {
     public List<Configuration> chain;
-    
+
     private ConfigurationChain() {}
-    
+
     public static ConfigurationChain primaryConfiguration( Configuration configuration ) {
         ConfigurationChain chain = new ConfigurationChain();
         chain.chain = new ArrayList<Configuration>();
         chain.chain.add( configuration );
         return chain;
     }
-    
+
     public ConfigurationChain fallbackTo( Configuration configuration ) {
         chain.add( configuration );
         return this;
@@ -40,6 +42,30 @@ public class ConfigurationChain implements Configuration {
         }
         return value;
     }
+    
+    @Override
+    public Configuration getConfiguration( Key prefix ) {
+        return getConfiguration( prefix.key() );
+    }
+
+    @Override
+    public Configuration getConfiguration( String prefix ) {
+        if ( chain != null ) {
+            ConfigurationChain newConfig = null;
+            for ( Configuration configuration : chain ) {
+                if ( newConfig == null ) {
+                    newConfig = ConfigurationChain.primaryConfiguration( 
+                            configuration.getConfiguration( prefix ) );
+                }
+                else {
+                    newConfig.fallbackTo( 
+                            configuration.getConfiguration( prefix ) );
+                }
+            }
+            return newConfig;
+        }
+        return new MapConfiguration();
+    }
 
     @Override
     public Boolean has( Key key ) {
@@ -58,5 +84,16 @@ public class ConfigurationChain implements Configuration {
             }
         }
         return value;
+    }
+
+    @Override
+    public Set<String> keySet() {
+        Set<String> keySet = new HashSet<String>();
+        if ( chain != null || !chain.isEmpty() ) {
+            for ( Configuration configuration : chain ) {
+                keySet.addAll( configuration.keySet() );
+            }
+        }
+        return keySet;
     }
 }
