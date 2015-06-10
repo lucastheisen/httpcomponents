@@ -13,8 +13,8 @@ public class MapConfiguration implements Configuration {
         this( new HashMap<String, Object>() );
     }
 
-    public MapConfiguration( Map<String, Object> map ) {
-        this.map = map;
+    public MapConfiguration( Map<String, ? extends Object> map ) {
+        this.map = new HashMap<String, Object>( map );
     }
 
     public MapConfiguration add( Key key, Object value ) {

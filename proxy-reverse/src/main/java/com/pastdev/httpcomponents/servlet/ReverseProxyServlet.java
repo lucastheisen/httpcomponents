@@ -15,18 +15,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.CookieStore;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.AbstractExecutionAwareRequest;
 import org.apache.http.entity.InputStreamEntity;
-import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicHttpEntityEnclosingRequest;
 import org.apache.http.message.BasicHttpRequest;
@@ -49,11 +46,10 @@ public class ReverseProxyServlet extends HttpServlet {
     private static final long serialVersionUID = 9091933627516767566L;
     private static Logger logger = LoggerFactory.getLogger( ReverseProxyServlet.class );
 
-    public static final String ATTRIBUTE_COOKIE_STORE = "cookieStore";
     /* http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1 */
     public static final HeaderGroup HOB_BY_HOP_HEADERS;
     public static final String JNDI_ROOT;
-    public static final String REQUEST_ATTRIBUTE_X_REQUEST_ID = 
+    public static final String REQUEST_ATTRIBUTE_X_REQUEST_ID =
             ReverseProxyServlet.class.getName() + ".X-Request-ID";
 
     static {
@@ -65,14 +61,11 @@ public class ReverseProxyServlet extends HttpServlet {
             JNDI_ROOT = "java:/comp/env/" + jndiRoot;
         }
 
-        // Cookie* are not really hop-by-hop headers per RFC, but this proxy
-        // maintains cookies store for proxied requests.
         HOB_BY_HOP_HEADERS = new HeaderGroup();
         String[] headers = new String[] {
                 "Connection", "Keep-Alive", "Proxy-Authenticate",
                 "Proxy-Authorization", "TE", "Trailers", "Transfer-Encoding",
-                "Upgrade",
-                "Cookie", "Set-Cookie", "Cookie2", "Set-Cookie2" };
+                "Upgrade" }; 
         for ( String header : headers ) {
             HOB_BY_HOP_HEADERS.addHeader( new BasicHeader( header, null ) );
         }
@@ -134,7 +127,7 @@ public class ReverseProxyServlet extends HttpServlet {
                         jndiRoot );
                 configuration = ConfigurationChain
                         .primaryConfiguration(
-                                new JndiConfiguration( JNDI_ROOT ) )
+                                new JndiConfiguration( jndiRoot ) )
                         .fallbackTo(
                                 new InitParameterConfiguration( servletConfig ) );
             }
@@ -202,15 +195,6 @@ public class ReverseProxyServlet extends HttpServlet {
     }
 
     private HttpClient newHttpClient( HttpServletRequest request ) {
-        HttpSession session = request.getSession();
-        CookieStore cookies = (CookieStore) session.getAttribute(
-                ATTRIBUTE_COOKIE_STORE );
-        if ( cookies == null ) {
-            logger.debug( "initializing session cookies" );
-            cookies = new BasicCookieStore();
-            session.setAttribute( ATTRIBUTE_COOKIE_STORE, cookies );
-        }
-        logger.trace( "cookies: {}", cookies );
         HttpClientFactory httpClientFactory = (HttpClientFactory)
                 getServletContext().getAttribute(
                         HttpClientFactoryServletContextListener.HTTP_CLIENT_FACTORY );
@@ -218,7 +202,7 @@ public class ReverseProxyServlet extends HttpServlet {
             httpClientFactory = new DefaultHttpClientFactory();
         }
 
-        return httpClientFactory.create( configuration, cookies );
+        return httpClientFactory.create( configuration, null );
     }
 
     @Override
@@ -257,7 +241,7 @@ public class ReverseProxyServlet extends HttpServlet {
         if ( setXForwarded ) {
             setReverseProxyHeaders( servletRequest, proxyRequest );
         }
-        
+
         if ( setXRequestId ) {
             servletRequest.setAttribute( REQUEST_ATTRIBUTE_X_REQUEST_ID,
                     setRequestIdHeader( servletRequest, proxyRequest ) );
@@ -368,9 +352,9 @@ public class ReverseProxyServlet extends HttpServlet {
         PROXY_REQUEST_PREPROCESSOR_CLASS("proxyRequestPreprocessor"),
         RESPONSE_HANDLER_CLASS("responseHandler"),
         // http://httpd.apache.org/docs/2.2/mod/mod_proxy.html#x-headers
-        SET_X_FORWARDED("setXForwarded"), 
+        SET_X_FORWARDED("setXForwarded"),
         SET_X_REQUEST_ID("setXRequestId"),
-        TARGET_URI("targetUri"); 
+        TARGET_URI("targetUri");
 
         private String key;
 
