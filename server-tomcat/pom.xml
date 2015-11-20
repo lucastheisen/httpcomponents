@@ -7,21 +7,15 @@
     <version>0.1.2-SNAPSHOT</version>
   </parent>
 
-  <artifactId>httpclient-tunnel</artifactId>
+  <artifactId>server-tomcat</artifactId>
   <packaging>jar</packaging>
 
-  <name>Tunneling HTTP Client</name>
+  <name>Tomcat Server</name>
   <description>
-    An extension to apache's httpclient capable of tunneling socket 
-    connections through ssh connections.
+    Tomcat based implementation of for the server project.
   </description>
 
   <dependencies>
-    <dependency>
-      <groupId>com.pastdev</groupId>
-      <artifactId>jsch-extension</artifactId>
-      <scope>compile</scope>
-    </dependency>
     <dependency>
       <groupId>com.pastdev.httpcomponents</groupId>
       <artifactId>configuration</artifactId>
@@ -30,8 +24,33 @@
     </dependency>
     <dependency>
       <groupId>com.pastdev.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
+      <artifactId>server</artifactId>
       <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-catalina</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-core</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-jasper</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-jdbc</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -40,23 +59,6 @@
       <scope>compile</scope>
     </dependency>
 
-    <dependency>
-      <groupId>com.pastdev.httpcomponents</groupId>
-      <artifactId>server-test-jetty</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.pastdev.httpcomponents</groupId>
-      <artifactId>server-test-tomcat</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
@@ -70,16 +72,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

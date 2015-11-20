@@ -155,6 +155,8 @@ public class JettyServers implements com.pastdev.httpcomponents.server.Servers {
                                 newServlet( servlet ) ),
                         servlet.mapping() );
             }
+            
+            //TODO: implement naming annotation support
 
             logger.debug( "Starting {}", name );
             server = new org.eclipse.jetty.server.Server();

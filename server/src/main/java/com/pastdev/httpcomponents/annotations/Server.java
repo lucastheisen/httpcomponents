@@ -7,6 +7,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 
+import com.pastdev.httpcomponents.annotations.naming.ServerResources;
+
+
 @Retention( RetentionPolicy.RUNTIME )
 @Target(
 { ElementType.METHOD, ElementType.TYPE } )
@@ -22,6 +25,8 @@ public @interface Server {
     public String id();
     
     public String name() default "Server";
+
+    public ServerResources namingResources() default @ServerResources;
 
     public int port() default 0;
 

@@ -7,21 +7,15 @@
     <version>0.1.2-SNAPSHOT</version>
   </parent>
 
-  <artifactId>httpclient-tunnel</artifactId>
+  <artifactId>server-test-tomcat</artifactId>
   <packaging>jar</packaging>
 
-  <name>Tunneling HTTP Client</name>
+  <name>Tomcat Server Test</name>
   <description>
-    An extension to apache's httpclient capable of tunneling socket 
-    connections through ssh connections.
+    Tomcat based implementation of for the server-test project.
   </description>
 
   <dependencies>
-    <dependency>
-      <groupId>com.pastdev</groupId>
-      <artifactId>jsch-extension</artifactId>
-      <scope>compile</scope>
-    </dependency>
     <dependency>
       <groupId>com.pastdev.httpcomponents</groupId>
       <artifactId>configuration</artifactId>
@@ -30,8 +24,19 @@
     </dependency>
     <dependency>
       <groupId>com.pastdev.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
+      <artifactId>server-tomcat</artifactId>
       <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.pastdev.httpcomponents</groupId>
+      <artifactId>server-test</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -40,23 +45,6 @@
       <scope>compile</scope>
     </dependency>
 
-    <dependency>
-      <groupId>com.pastdev.httpcomponents</groupId>
-      <artifactId>server-test-jetty</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.pastdev.httpcomponents</groupId>
-      <artifactId>server-test-tomcat</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
@@ -70,16 +58,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -54,6 +54,6 @@ public class DefaultEnvironmentValueFactory implements EnvironmentValueFactory {
         catch ( URISyntaxException e ) {
             throw new IllegalArgumentException( "Unable to build uri for " + property, e );
         }
-        throw new IllegalArgumentException( "Unknown property " + property );
+        throw new IllegalArgumentException( "Unknown property [" + property + "]" );
     }
 }
