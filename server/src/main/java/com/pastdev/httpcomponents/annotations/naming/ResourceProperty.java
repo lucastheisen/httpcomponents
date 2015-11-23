@@ -1,10 +1,8 @@
 package com.pastdev.httpcomponents.annotations.naming;
 
 
-public @interface ContextEnvEntry {
+public @interface ResourceProperty {
     public String name();
 
     public String value() default "";
-
-    public Class<?> type() default String.class;
 }

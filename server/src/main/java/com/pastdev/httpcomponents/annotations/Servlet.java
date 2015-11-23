@@ -1,7 +1,7 @@
 package com.pastdev.httpcomponents.annotations;
 
 
-import com.pastdev.httpcomponents.annotations.naming.ContextResources;
+import com.pastdev.httpcomponents.annotations.naming.ServletContextResources;
 import com.pastdev.httpcomponents.factory.ConfigurableObjectFactory;
 import com.pastdev.httpcomponents.factory.ServletFactory;
 
@@ -17,7 +17,7 @@ public @interface Servlet {
 
     public String name();
 
-    public ContextResources namingResources() default @ContextResources;
+    public ServletContextResources namingResources() default @ServletContextResources;
 
     public Class<? extends javax.servlet.Servlet> type();
 }

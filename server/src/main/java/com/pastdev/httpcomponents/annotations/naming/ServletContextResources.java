@@ -1,8 +1,7 @@
 package com.pastdev.httpcomponents.annotations.naming;
 
-
-public @interface ServerResources {
+public @interface ServletContextResources {
     public EnvEntry[] envEntries() default {};
 
-    public Resource[] resources() default {};
+    public ResourceRef[] resourceRefs() default {};
 }

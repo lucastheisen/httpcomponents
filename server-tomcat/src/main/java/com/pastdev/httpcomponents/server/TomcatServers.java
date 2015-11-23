@@ -29,10 +29,11 @@ import org.slf4j.LoggerFactory;
 import com.pastdev.httpcomponents.annotations.Filter;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servlet;
+import com.pastdev.httpcomponents.annotations.ServletContext;
 import com.pastdev.httpcomponents.annotations.ServletContextListener;
-import com.pastdev.httpcomponents.annotations.naming.ContextEnvEntry;
-import com.pastdev.httpcomponents.annotations.naming.ContextResourceProperty;
-import com.pastdev.httpcomponents.annotations.naming.ContextResourcePropertyFactory;
+import com.pastdev.httpcomponents.annotations.naming.EnvEntry;
+import com.pastdev.httpcomponents.annotations.naming.ResourceProperty;
+import com.pastdev.httpcomponents.annotations.naming.ResourcePropertyFactory;
 
 
 public class TomcatServers extends AbstractServers {
@@ -66,6 +67,8 @@ public class TomcatServers extends AbstractServers {
                 if ( server != null ) {
                     server.stop();
                     logger.info( "Stopped {}", this );
+                    server.destroy();
+                    logger.info( "Destroyed {}", this );
                 }
             }
             catch ( Exception e ) {
@@ -103,92 +106,93 @@ public class TomcatServers extends AbstractServers {
 
         @Override
         protected int start( Server config ) throws Exception {
-            server = new Tomcat();
             tomcatBase = Files.createTempDirectory( "tomcat" )
                     .toAbsolutePath();
 
-            Tomcat tomcat = new Tomcat();
-            tomcat.setPort( getPort() );
-            tomcat.setBaseDir( tomcatBase.toString() );
+            this.server = new Tomcat();
+            server.setPort( getPort() );
+            server.setBaseDir( tomcatBase.toString() );
             Path webapps = tomcatBase.resolve( "webapps" );
             Files.createDirectory( webapps );
-            tomcat.getHost().setAppBase( webapps.toString() );
-            tomcat.getServer().addLifecycleListener( new AprLifecycleListener() );
+            server.getHost().setAppBase( webapps.toString() );
+            server.getServer().addLifecycleListener( new AprLifecycleListener() );
 
-            tomcat.enableNaming();
+            server.enableNaming();
             NamingResources namingResources = new NamingResources();
-            for ( com.pastdev.httpcomponents.annotations.naming.ContextResource resourceConfig : config.namingResources().resources() ) {
+            for ( com.pastdev.httpcomponents.annotations.naming.Resource resourceConfig : config.namingResources().resources() ) {
                 ContextResource resource = new ContextResource();
                 resource.setName( resourceConfig.name() );
                 resource.setType( resourceConfig.type().getName() );
-                for ( ContextResourcePropertyFactory propertiesFactory : resourceConfig.propertiesFactories() ) {
+                for ( ResourcePropertyFactory propertiesFactory : resourceConfig.propertiesFactories() ) {
                     Properties properties = propertiesFactory.factory().newInstance().properties( config );
                     for ( String propertyName : properties.stringPropertyNames() ) {
                         resource.setProperty( propertyName, properties.get( propertyName ) );
                     }
                 }
-                for ( ContextResourceProperty property : resourceConfig.properties() ) {
+                for ( ResourceProperty property : resourceConfig.properties() ) {
                     resource.setProperty( property.name(), property.value() );
                 }
                 namingResources.addResource( resource );
             }
-            for ( ContextEnvEntry envEntry : config.namingResources().envEntries() ) {
+            for ( EnvEntry envEntry : config.namingResources().envEntries() ) {
                 ContextEnvironment environment = new ContextEnvironment();
                 environment.setName( envEntry.name() );
                 environment.setValue( envEntry.value() );
                 environment.setType( envEntry.type().getName() );
                 namingResources.addEnvironment( environment );
             }
-            tomcat.getServer().setGlobalNamingResources( namingResources );
+            server.getServer().setGlobalNamingResources( namingResources );
 
-            Context context = (Context) tomcat.getHost().findChild( config.contextPath() );
-            if ( context == null ) {
-                context = tomcat.addContext( config.contextPath(), config.contextPath() );
-            }
-
-            for ( ServletContextListener listener : config.servletContextListeners() ) {
-                context.getServletContext().addListener(
-                        newServletContextListener( TomcatServers.this, listener ) );
-            }
-            for ( Filter filter : config.filters() ) {
-                FilterDef filterDef = new FilterDef();
-                filterDef.setFilter( newFilter( TomcatServers.this, filter ) );
-                context.addFilterDef( filterDef );
-
-                FilterMap filterMapping = new FilterMap();
-                filterMapping.setFilterName( filter.name() );
-                filterMapping.addURLPattern( filter.mapping() );
-                for ( DispatcherType dispatcherType : filter.dispatcherTypes() ) {
-                    filterMapping.setDispatcher( dispatcherType.toString() );
+            for ( ServletContext servletContext : config.servletContexts() ) {
+                Context context = (Context) server.getHost().findChild( servletContext.path() );
+                if ( context == null ) {
+                    context = server.addContext( servletContext.path(), servletContext.path() );
                 }
-                context.addFilterMap( filterMapping );
-            }
-            for ( Servlet servlet : config.servlets() ) {
-                tomcat.addServlet( config.contextPath(), servlet.name(),
-                        newServlet( TomcatServers.this, servlet ) );
 
-                context.addServletMapping( servlet.mapping(), servlet.name() );
-                NamingResources contextNamingResources = new NamingResources();
-                for ( com.pastdev.httpcomponents.annotations.naming.ContextResourceRef resourceRef : servlet.namingResources().resourceRefs() ) {
-                    ContextResourceLink resourceLink = new ContextResourceLink();
-                    resourceLink.setName( resourceRef.name() );
-                    resourceLink.setGlobal( resourceRef.nameOnServer() );
-                    resourceLink.setType( resourceRef.type().getName() );
-                    contextNamingResources.addResourceLink( resourceLink );
+                for ( ServletContextListener listener : servletContext.listeners() ) {
+                    context.getServletContext().addListener(
+                            newServletContextListener( TomcatServers.this, listener ) );
                 }
-                for ( ContextEnvEntry envEntry : servlet.namingResources().envEntries() ) {
-                    ContextEnvironment environment = new ContextEnvironment();
-                    environment.setName( envEntry.name() );
-                    environment.setValue( envEntry.value() );
-                    environment.setType( envEntry.type().getName() );
-                    contextNamingResources.addEnvironment( environment );
+                for ( Filter filter : servletContext.filters() ) {
+                    FilterDef filterDef = new FilterDef();
+                    filterDef.setFilter( newFilter( TomcatServers.this, filter ) );
+                    context.addFilterDef( filterDef );
+
+                    FilterMap filterMapping = new FilterMap();
+                    filterMapping.setFilterName( filter.name() );
+                    filterMapping.addURLPattern( filter.mapping() );
+                    for ( DispatcherType dispatcherType : filter.dispatcherTypes() ) {
+                        filterMapping.setDispatcher( dispatcherType.toString() );
+                    }
+                    context.addFilterMap( filterMapping );
                 }
-                context.setNamingResources( contextNamingResources );
+                for ( Servlet servlet : servletContext.servlets() ) {
+                    server.addServlet( servletContext.path(), servlet.name(),
+                            newServlet( TomcatServers.this, servlet ) );
+
+                    context.addServletMapping( servlet.mapping(), servlet.name() );
+                    NamingResources contextNamingResources = new NamingResources();
+                    for ( com.pastdev.httpcomponents.annotations.naming.ResourceRef resourceRef : servlet.namingResources().resourceRefs() ) {
+                        ContextResourceLink resourceLink = new ContextResourceLink();
+                        resourceLink.setName( resourceRef.name() );
+                        resourceLink.setGlobal( resourceRef.lookupName() );
+                        resourceLink.setType( resourceRef.type().getName() );
+                        contextNamingResources.addResourceLink( resourceLink );
+                    }
+                    for ( EnvEntry envEntry : servlet.namingResources().envEntries() ) {
+                        ContextEnvironment environment = new ContextEnvironment();
+                        environment.setName( envEntry.name() );
+                        environment.setValue( envEntry.value() );
+                        environment.setType( envEntry.type().getName() );
+                        contextNamingResources.addEnvironment( environment );
+                    }
+                    context.setNamingResources( contextNamingResources );
+                }
             }
 
-            tomcat.start();
+            server.start();
 
-            return tomcat.getConnector().getLocalPort();
+            return server.getConnector().getLocalPort();
         }
     }
 }

@@ -31,9 +31,10 @@ import com.pastdev.http.client.TunnelCapableHttpClientFactory;
 import com.pastdev.http.client.TunnelConnectionManagerFactory;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servlet;
-import com.pastdev.httpcomponents.annotations.naming.ContextEnvEntry;
-import com.pastdev.httpcomponents.annotations.naming.ContextResourceRef;
-import com.pastdev.httpcomponents.annotations.naming.ContextResources;
+import com.pastdev.httpcomponents.annotations.ServletContext;
+import com.pastdev.httpcomponents.annotations.naming.EnvEntry;
+import com.pastdev.httpcomponents.annotations.naming.ResourceRef;
+import com.pastdev.httpcomponents.annotations.naming.ServletContextResources;
 import com.pastdev.httpcomponents.annotations.naming.ServerResources;
 import com.pastdev.httpcomponents.configuration.Configuration;
 import com.pastdev.httpcomponents.configuration.MapConfiguration;
@@ -53,21 +54,23 @@ public class TomcatTunnelCapableHttpClientTest {
             name = "Hello World",
             namingResources = @ServerResources(
                     envEntries = {
-                            @ContextEnvEntry (
+                            @EnvEntry(
                                     name = "global/message/greeting",
                                     type = String.class,
                                     value = "Hello World!" ) } ),
-            servlets = {
-                    @Servlet(
-                            name = "Hello World",
-                            type = HelloWorldServlet.class,
-                            namingResources = @ContextResources(
-                                    resourceRefs = {
-                                            @ContextResourceRef(
-                                                    name = "message/greeting",
-                                                    nameOnServer = "global/message/greeting",
-                                                    type = String.class ) } ) )
-            } )
+            servletContexts = @ServletContext(
+                    servlets = {
+                            @Servlet(
+                                    name = "Hello World",
+                                    type = HelloWorldServlet.class,
+                                    namingResources = @ServletContextResources(
+                                            resourceRefs = {
+                                                    @ResourceRef(
+                                                            name = "message/greeting",
+                                                            lookupName = "global/message/greeting",
+                                                            type = String.class
+                                                    ) } )
+                            ) } ) )
     public void testGet() throws ClientProtocolException,
             IOException, URISyntaxException, NamingException {
         logger.debug( "testing GET" );

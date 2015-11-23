@@ -14,11 +14,7 @@ import com.pastdev.httpcomponents.annotations.naming.ServerResources;
 @Target(
 { ElementType.METHOD, ElementType.TYPE } )
 public @interface Server {
-    public String contextPath() default "";
-    
     public boolean external() default false;
-
-    public Filter[] filters() default {};
 
     public String hostName() default "localhost";
 
@@ -32,9 +28,7 @@ public @interface Server {
 
     public String scheme() default "http";
 
-    public Servlet[] servlets() default {};
-    
     public String sessionCookieName() default "";
     
-    public ServletContextListener[] servletContextListeners() default {};
+    public ServletContext[] servletContexts() default {};
 }
