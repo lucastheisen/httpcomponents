@@ -5,12 +5,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 
-
-
 import javax.servlet.ServletException;
 
 
-import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,15 +72,12 @@ public abstract class AbstractServer implements Server {
     }
 
     public URI getUri() throws URISyntaxException {
-        return new URIBuilder()
-                .setScheme( scheme )
-                .setHost( hostName )
-                .setPort( port )
-                .build();
+        return new URI( getUriString() );
     }
 
     public String getUriString() throws URISyntaxException {
-        return getUri().toString();
+        return scheme + "://" + hostName
+                + (port > 0 ? (":" + port) : "");
     }
 
     /**
@@ -96,9 +90,8 @@ public abstract class AbstractServer implements Server {
      * @throws Exception
      *             if unable to start
      */
-    abstract protected int start( com.pastdev.httpcomponents.annotations.Server config ) 
+    abstract protected int start( com.pastdev.httpcomponents.annotations.Server config )
             throws Exception;
-
 
     protected javax.servlet.Filter newFilter( Servers servers, Filter filter )
             throws ServletException {
@@ -118,7 +111,7 @@ public abstract class AbstractServer implements Server {
                 .newInstance( servers, listener );
     }
 
-   @Override
+    @Override
     public String toString() {
         return name + " (" + scheme + "://" + hostName
                 + (port > 0 ? (":" + port) : "") + ")";

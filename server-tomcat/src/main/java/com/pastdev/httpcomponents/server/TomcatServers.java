@@ -38,7 +38,7 @@ import com.pastdev.httpcomponents.annotations.naming.ContextResourcePropertyFact
 public class TomcatServers extends AbstractServers {
     private static Logger logger = LoggerFactory.getLogger( TomcatServers.class );
 
-    public TomcatServers( com.pastdev.httpcomponents.annotations.Server server ) throws Exception {
+    public TomcatServers( Server server ) throws Exception {
         super( server );
     }
 
@@ -137,6 +137,7 @@ public class TomcatServers extends AbstractServers {
                 environment.setName( envEntry.name() );
                 environment.setValue( envEntry.value() );
                 environment.setType( envEntry.type().getName() );
+                environment.setOverride( envEntry.override() );
                 namingResources.addEnvironment( environment );
             }
             tomcat.getServer().setGlobalNamingResources( namingResources );

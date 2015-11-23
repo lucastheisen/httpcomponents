@@ -21,14 +21,14 @@ import org.slf4j.LoggerFactory;
 public class JndiContext {
     private static final Logger logger = LoggerFactory.getLogger( JndiContext.class );
     // http://stackoverflow.com/a/4099163/516433
-    private static final String JNDI_ROOT = "java:comp/env/";
+    public static final String JNDI_ROOT = "java:comp/env";
 
     private static String absolute() {
-        return absolute( "" );
+        return JNDI_ROOT;
     }
 
     private static String absolute( String relativeName ) {
-        return JNDI_ROOT + relativeName;
+        return JNDI_ROOT + "/" + relativeName;
     }
 
     public static void bind( String relativeName, Object value ) throws NamingException {
