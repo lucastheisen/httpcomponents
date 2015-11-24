@@ -30,7 +30,7 @@ import com.pastdev.http.client.TunnelCapableHttpClientFactory;
 import com.pastdev.http.client.TunnelConnectionManagerFactory;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servlet;
-import com.pastdev.httpcomponents.annotations.ServletContext;
+import com.pastdev.httpcomponents.annotations.WebApp;
 import com.pastdev.httpcomponents.configuration.Configuration;
 import com.pastdev.httpcomponents.configuration.MapConfiguration;
 import com.pastdev.httpcomponents.jetty.JettyServerRule;
@@ -47,8 +47,8 @@ public class TunnelCapableHttpClientTest {
     @Server(
             id = "server",
             name = "Hello World",
-            servletContexts = {
-                    @ServletContext(
+            webApps = {
+                    @WebApp(
                             servlets = {
                                     @Servlet(
                                             name = "Hello World",

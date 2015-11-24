@@ -30,5 +30,5 @@ public @interface Server {
 
     public String sessionCookieName() default "";
     
-    public ServletContext[] servletContexts() default {};
+    public WebApp[] webApps() default {};
 }

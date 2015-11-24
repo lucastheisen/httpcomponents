@@ -13,6 +13,8 @@ public @interface Servlet {
     
     public FactoryParam[] factoryParams() default {};
 
+    public InitParam[] initParams() default {};
+    
     public String mapping() default "/*";
 
     public String name();

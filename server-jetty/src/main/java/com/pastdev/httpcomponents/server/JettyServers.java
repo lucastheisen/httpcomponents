@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.EnumSet;
+import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,9 +31,9 @@ import org.slf4j.LoggerFactory;
 
 
 import com.pastdev.httpcomponents.annotations.Filter;
+import com.pastdev.httpcomponents.annotations.Listener;
 import com.pastdev.httpcomponents.annotations.Servlet;
-import com.pastdev.httpcomponents.annotations.ServletContext;
-import com.pastdev.httpcomponents.annotations.ServletContextListener;
+import com.pastdev.httpcomponents.annotations.WebApp;
 import com.pastdev.httpcomponents.factory.FactoryFactory;
 
 
@@ -134,10 +135,10 @@ public class JettyServers implements com.pastdev.httpcomponents.server.Servers {
             server.setSessionIdManager( new HashSessionIdManager() );
             HandlerCollection handlers = new HandlerCollection();
             ContextHandlerCollection contexts = new ContextHandlerCollection();
-            handlers.setHandlers(new Handler[] { contexts, new DefaultHandler() });
-            server.setHandler(handlers);
+            handlers.setHandlers( new Handler[] { contexts, new DefaultHandler() } );
+            server.setHandler( handlers );
 
-            for ( ServletContext servletContext : config.servletContexts() ) {
+            for ( WebApp servletContext : config.webApps() ) {
                 ServletContextHandler handler = new ServletContextHandler();
                 HashSessionManager sessionManager = new HashSessionManager();
                 String cookieName = config.sessionCookieName();
@@ -152,9 +153,9 @@ public class JettyServers implements com.pastdev.httpcomponents.server.Servers {
                     handler.setContextPath( contextPath );
                 }
 
-                for ( ServletContextListener listener : servletContext.listeners() ) {
-                    handler.addEventListener( newServletContextListener(
-                            listener ) );
+                for ( Listener listener : servletContext.listeners() ) {
+                    Object listenerObject = listener.listenerClass().newInstance();
+                    handler.addEventListener( (EventListener)listenerObject );
                 }
                 for ( Filter filter : servletContext.filters() ) {
                     DispatcherType[] dispatcherTypes = filter.dispatcherTypes();
@@ -242,12 +243,6 @@ public class JettyServers implements com.pastdev.httpcomponents.server.Servers {
                 throws ServletException {
             return FactoryFactory.newFactory( servlet.factory(), servlet.factoryParams() )
                     .newInstance( JettyServers.this, servlet );
-        }
-
-        private javax.servlet.ServletContextListener newServletContextListener(
-                ServletContextListener listener ) {
-            return FactoryFactory.newFactory( listener.factory(), listener.factoryParams() )
-                    .newInstance( JettyServers.this, listener );
         }
 
         @Override

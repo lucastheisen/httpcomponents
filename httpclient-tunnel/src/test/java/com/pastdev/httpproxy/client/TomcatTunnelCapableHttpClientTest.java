@@ -31,7 +31,7 @@ import com.pastdev.http.client.TunnelCapableHttpClientFactory;
 import com.pastdev.http.client.TunnelConnectionManagerFactory;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servlet;
-import com.pastdev.httpcomponents.annotations.ServletContext;
+import com.pastdev.httpcomponents.annotations.WebApp;
 import com.pastdev.httpcomponents.annotations.naming.EnvEntry;
 import com.pastdev.httpcomponents.annotations.naming.ResourceRef;
 import com.pastdev.httpcomponents.annotations.naming.ServletContextResources;
@@ -58,7 +58,7 @@ public class TomcatTunnelCapableHttpClientTest {
                                     name = "global/message/greeting",
                                     type = String.class,
                                     value = "Hello World!" ) } ),
-            servletContexts = @ServletContext(
+            webApps = @WebApp(
                     servlets = {
                             @Servlet(
                                     name = "Hello World",

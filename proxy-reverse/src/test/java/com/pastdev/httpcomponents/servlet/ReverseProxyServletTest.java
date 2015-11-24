@@ -32,8 +32,8 @@ import com.pastdev.httpcomponents.annotations.FactoryParam;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servers;
 import com.pastdev.httpcomponents.annotations.Servlet;
-import com.pastdev.httpcomponents.annotations.ServletContext;
-import com.pastdev.httpcomponents.annotations.ServletContextListener;
+import com.pastdev.httpcomponents.annotations.WebApp;
+import com.pastdev.httpcomponents.annotations.Listener;
 import com.pastdev.httpcomponents.factory.TunnelValueFactory;
 import com.pastdev.httpcomponents.jetty.JettyServerRule;
 import com.pastdev.httpcomponents.junit.ServerRule;
@@ -51,8 +51,8 @@ public class ReverseProxyServletTest {
             @Server(
                     id = "hello",
                     name = "Hello World Server",
-                    servletContexts = {
-                            @ServletContext(
+                    webApps = {
+                            @WebApp(
                                     servlets = { @Servlet(
                                             name = "Hello World Servlet",
                                             type = HelloWorldServlet.class ) } )
@@ -61,8 +61,8 @@ public class ReverseProxyServletTest {
             @Server(
                     id = "proxy",
                     name = "Proxy Server",
-                    servletContexts = {
-                            @ServletContext(
+                    webApps = {
+                            @WebApp(
                                     servlets = { @Servlet(
                                             name = "Proxy Servlet",
                                             type = ReverseProxyServlet.class,
@@ -93,14 +93,14 @@ public class ReverseProxyServletTest {
             @Server(
                     id = "hello",
                     name = "Hello World Server",
-                    servletContexts = { @ServletContext(
+                    webApps = { @WebApp(
                             servlets = { @Servlet(
                                     name = "Hello World Servlet",
                                     type = HelloWorldServlet.class ) } ) } ),
             @Server(
                     id = "proxy",
                     name = "Proxy Server",
-                    servletContexts = { @ServletContext(
+                    webApps = { @WebApp(
                             servlets = { @Servlet(
                                     name = "Proxy Servlet",
                                     type = ReverseProxyServlet.class,
@@ -109,7 +109,7 @@ public class ReverseProxyServletTest {
                                                     name = "targetUri",
                                                     serverRef = "hello",
                                                     value = "uriString" ) } ) ) },
-                            listeners = { @ServletContextListener(
+                            listeners = { @Listener(
                                     name = "Tunnel Manager",
                                     type = HttpClientFactoryServletContextListener.class,
                                     configuration = @Configuration(
@@ -137,8 +137,8 @@ public class ReverseProxyServletTest {
             @Server(
                     id = "hello",
                     name = "Hello World Server",
-                    servletContexts = {
-                            @ServletContext(
+                    webApps = {
+                            @WebApp(
                                     servlets = { @Servlet(
                                             name = "Hello World Servlet",
                                             mapping = "/hello",
@@ -146,8 +146,8 @@ public class ReverseProxyServletTest {
             @Server(
                     id = "proxy",
                     name = "Proxy Server",
-                    servletContexts = {
-                            @ServletContext(
+                    webApps = {
+                            @WebApp(
                                     path = "/proxy",
                                     servlets = { @Servlet(
                                             name = "Proxy Servlet",
@@ -183,8 +183,8 @@ public class ReverseProxyServletTest {
             @Server(
                     id = "hello",
                     name = "Hello World Server",
-                    servletContexts = {
-                            @ServletContext(
+                    webApps = {
+                            @WebApp(
                                     servlets = { @Servlet(
                                             name = "Hello World Servlet",
                                             mapping = "/hello",
@@ -192,8 +192,8 @@ public class ReverseProxyServletTest {
             @Server(
                     id = "proxy",
                     name = "Proxy Server",
-                    servletContexts = {
-                            @ServletContext(
+                    webApps = {
+                            @WebApp(
                                     path = "/proxy",
                                     servlets = { @Servlet(
                                             name = "Proxy Servlet",

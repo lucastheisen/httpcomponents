@@ -13,8 +13,9 @@ import java.util.Properties;
 import javax.servlet.DispatcherType;
 
 
-import org.apache.catalina.Context;
+import org.apache.catalina.Wrapper;
 import org.apache.catalina.core.AprLifecycleListener;
+import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.deploy.ContextEnvironment;
 import org.apache.catalina.deploy.ContextResource;
 import org.apache.catalina.deploy.ContextResourceLink;
@@ -26,11 +27,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+import com.pastdev.httpcomponents.annotations.ContextParam;
 import com.pastdev.httpcomponents.annotations.Filter;
+import com.pastdev.httpcomponents.annotations.InitParam;
+import com.pastdev.httpcomponents.annotations.Listener;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servlet;
-import com.pastdev.httpcomponents.annotations.ServletContext;
-import com.pastdev.httpcomponents.annotations.ServletContextListener;
+import com.pastdev.httpcomponents.annotations.WebApp;
 import com.pastdev.httpcomponents.annotations.naming.EnvEntry;
 import com.pastdev.httpcomponents.annotations.naming.ResourceProperty;
 import com.pastdev.httpcomponents.annotations.naming.ResourcePropertyFactory;
@@ -112,9 +115,9 @@ public class TomcatServers extends AbstractServers {
             this.server = new Tomcat();
             server.setPort( getPort() );
             server.setBaseDir( tomcatBase.toString() );
-            Path webapps = tomcatBase.resolve( "webapps" );
-            Files.createDirectory( webapps );
-            server.getHost().setAppBase( webapps.toString() );
+            Path webApps = tomcatBase.resolve( "webapps" );
+            Files.createDirectory( webApps );
+            server.getHost().setAppBase( webApps.toString() );
             server.getServer().addLifecycleListener( new AprLifecycleListener() );
 
             server.enableNaming();
@@ -143,17 +146,26 @@ public class TomcatServers extends AbstractServers {
             }
             server.getServer().setGlobalNamingResources( namingResources );
 
-            for ( ServletContext servletContext : config.servletContexts() ) {
-                Context context = (Context) server.getHost().findChild( servletContext.path() );
+            for ( WebApp webApp : config.webApps() ) {
+                StandardContext context = (StandardContext) server.getHost().findChild( webApp.path() );
+                String contextPath = webApp.path().startsWith( "/" ) ? webApp.path() : "/" + webApp.path();
+                String contextDocBase = webApp.path().startsWith( "/" ) ? webApp.path().substring( 1 ) : webApp.path();
                 if ( context == null ) {
-                    context = server.addContext( servletContext.path(), servletContext.path() );
+                    context = (StandardContext) server.addContext( contextPath, contextDocBase );
+                    if ( !webApp.path().isEmpty() ) {
+                        Path webAppPath = webApps.resolve( contextDocBase );
+                        logger.trace( "Creating temp docBase [{}] for [{}]", webAppPath, contextPath );
+                        Files.createDirectory( webAppPath );
+                    }
                 }
 
-                for ( ServletContextListener listener : servletContext.listeners() ) {
-                    context.getServletContext().addListener(
-                            newServletContextListener( TomcatServers.this, listener ) );
+                for ( ContextParam contextParam : webApp.contextParams() ) {
+                    context.addParameter( contextParam.paramName(), contextParam.paramValue() );
                 }
-                for ( Filter filter : servletContext.filters() ) {
+                for ( Listener listener : webApp.listeners() ) {
+                    context.addApplicationListener( listener.listenerClass().getName() );
+                }
+                for ( Filter filter : webApp.filters() ) {
                     FilterDef filterDef = new FilterDef();
                     filterDef.setFilter( newFilter( TomcatServers.this, filter ) );
                     context.addFilterDef( filterDef );
@@ -166,10 +178,15 @@ public class TomcatServers extends AbstractServers {
                     }
                     context.addFilterMap( filterMapping );
                 }
-                for ( Servlet servlet : servletContext.servlets() ) {
-                    server.addServlet( servletContext.path(), servlet.name(),
+                for ( Servlet servlet : webApp.servlets() ) {
+                    Wrapper wrapper = server.addServlet( contextPath, servlet.name(),
                             newServlet( TomcatServers.this, servlet ) );
 
+                    for ( InitParam initParam : servlet.initParams() ) {
+                        wrapper.addInitParameter( initParam.paramName(), initParam.paramValue() );
+                    }
+
+                    logger.debug( "Adding mapping [{}] for [{}]", servlet.mapping(), servlet.name() );
                     context.addServletMapping( servlet.mapping(), servlet.name() );
                     NamingResources contextNamingResources = new NamingResources();
                     for ( com.pastdev.httpcomponents.annotations.naming.ResourceRef resourceRef : servlet.namingResources().resourceRefs() ) {
@@ -191,9 +208,10 @@ public class TomcatServers extends AbstractServers {
             }
 
             server.start();
-            
-            //TODO: set common factory built global resources here:
-            //server.getServer().getGlobalNamingContext().bind( "silly", "value" );
+
+            // TODO: set common factory built global resources here:
+            // server.getServer().getGlobalNamingContext().bind( "silly",
+            // "value" );
 
             return server.getConnector().getLocalPort();
         }

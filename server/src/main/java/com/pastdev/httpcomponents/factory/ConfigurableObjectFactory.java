@@ -8,7 +8,6 @@ import java.lang.reflect.Method;
 
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
-import javax.servlet.ServletContextListener;
 
 
 import com.pastdev.httpcomponents.configuration.AnnotationConfiguration;
@@ -17,14 +16,7 @@ import com.pastdev.httpcomponents.configuration.MapConfiguration;
 import com.pastdev.httpcomponents.server.Servers;
 
 
-public class ConfigurableObjectFactory implements ServletFactory, FilterFactory,
-        ServletContextListenerFactory {
-    @Override
-    public ServletContextListener newInstance( Servers servers,
-            com.pastdev.httpcomponents.annotations.ServletContextListener listener ) {
-        return newInstance( servers, listener.type(), listener.configuration() );
-    }
-
+public class ConfigurableObjectFactory implements ServletFactory, FilterFactory {
     @Override
     public Filter newInstance( Servers servers,
             com.pastdev.httpcomponents.annotations.Filter filter ) {

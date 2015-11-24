@@ -5,8 +5,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 
-
-
 import javax.servlet.ServletException;
 
 
@@ -17,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import com.pastdev.httpcomponents.annotations.Filter;
 import com.pastdev.httpcomponents.annotations.Servlet;
-import com.pastdev.httpcomponents.annotations.ServletContextListener;
 import com.pastdev.httpcomponents.factory.FactoryFactory;
 
 
@@ -96,9 +93,8 @@ public abstract class AbstractServer implements Server {
      * @throws Exception
      *             if unable to start
      */
-    abstract protected int start( com.pastdev.httpcomponents.annotations.Server config ) 
+    abstract protected int start( com.pastdev.httpcomponents.annotations.Server config )
             throws Exception;
-
 
     protected javax.servlet.Filter newFilter( Servers servers, Filter filter )
             throws ServletException {
@@ -112,13 +108,7 @@ public abstract class AbstractServer implements Server {
                 .newInstance( servers, servlet );
     }
 
-    protected javax.servlet.ServletContextListener newServletContextListener(
-            Servers servers, ServletContextListener listener ) {
-        return FactoryFactory.newFactory( listener.factory(), listener.factoryParams() )
-                .newInstance( servers, listener );
-    }
-
-   @Override
+    @Override
     public String toString() {
         return name + " (" + scheme + "://" + hostName
                 + (port > 0 ? (":" + port) : "") + ")";

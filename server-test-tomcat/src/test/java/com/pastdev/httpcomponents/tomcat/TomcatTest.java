@@ -18,20 +18,17 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.junit.Rule;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servlet;
-import com.pastdev.httpcomponents.annotations.ServletContext;
+import com.pastdev.httpcomponents.annotations.WebApp;
 import com.pastdev.httpcomponents.annotations.naming.EnvEntry;
 import com.pastdev.httpcomponents.annotations.naming.Resource;
 import com.pastdev.httpcomponents.annotations.naming.ResourceProperty;
@@ -42,8 +39,6 @@ import com.pastdev.httpcomponents.junit.ServerRule;
 
 
 public class TomcatTest {
-    private static Logger logger = LoggerFactory.getLogger( TomcatTest.class );
-
     @Rule
     public ServerRule server = new TomcatServerRule();
 
@@ -57,7 +52,7 @@ public class TomcatTest {
                                     name = "global/message/greeting",
                                     type = String.class,
                                     value = "Hello World!" ) } ),
-            servletContexts = @ServletContext(
+            webApps = @WebApp(
                     servlets = {
                             @Servlet(
                                     name = "Hello World",
@@ -71,12 +66,7 @@ public class TomcatTest {
                     } ) )
     public void testEnvEntry() throws ClientProtocolException,
             IOException, URISyntaxException, NamingException {
-        logger.debug( "testing EnvEntry" );
-
-        HttpResponse response = HttpClientBuilder.create()
-                .setDefaultRequestConfig(
-                        RequestConfig.custom().setRedirectsEnabled( true ).build() )
-                .build()
+        HttpResponse response = HttpClientBuilder.create().build()
                 .execute( new HttpGet( new URIBuilder()
                         .setScheme( "http" )
                         .setHost( "localhost" )
@@ -101,7 +91,8 @@ public class TomcatTest {
                                     }
                             )
                     } ),
-            servletContexts = @ServletContext(
+            webApps = @WebApp(
+                    path = "/hello-world",
                     servlets = {
                             @Servlet(
                                     name = "Hello World",
@@ -111,25 +102,15 @@ public class TomcatTest {
                                                     @ResourceRef(
                                                             name = "resource/thing1",
                                                             lookupName = "global/resource/thing1",
-                                                            type = String.class ),
-                                                    @ResourceRef(
-                                                            name = "silly",
-                                                            lookupName = "silly",
-                                                            type = String.class )
-                                                            } ) )
-                    } ) )
+                                                            type = String.class ) } ) ) } ) )
     public void testResource() throws ClientProtocolException,
             IOException, URISyntaxException, NamingException {
-        logger.debug( "testing Resource" );
-
-        HttpResponse response = HttpClientBuilder.create()
-                .setDefaultRequestConfig(
-                        RequestConfig.custom().setRedirectsEnabled( true ).build() )
-                .build()
+        HttpResponse response = HttpClientBuilder.create().build()
                 .execute( new HttpGet( new URIBuilder()
                         .setScheme( "http" )
                         .setHost( "localhost" )
                         .setPort( server.getPort( "server" ) )
+                        .setPath( "/hello-world" )
                         .build() ) );
         assertEquals( 200, response.getStatusLine().getStatusCode() );
         assertEquals( "Hello, Thing1!", EntityUtils.toString( response.getEntity() ) );
@@ -145,7 +126,6 @@ public class TomcatTest {
                 response.getWriter().print( "Hello, " +
                         new InitialContext().lookup( "java:comp/env/resource/thing1" ) +
                         "!" );
-                logger.warn( "silly=[{}]", new InitialContext().lookup( "java:comp/env/silly" ) );
             }
             catch ( NamingException e ) {
                 throw new ServletException( e );
