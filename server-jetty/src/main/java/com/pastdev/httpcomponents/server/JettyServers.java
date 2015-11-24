@@ -14,20 +14,26 @@ import javax.servlet.ServletException;
 
 
 import org.apache.http.client.utils.URIBuilder;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import com.pastdev.httpcomponents.annotations.Filter;
-import com.pastdev.httpcomponents.annotations.Servlet;
-import com.pastdev.httpcomponents.annotations.ServletContextListener;
-import com.pastdev.httpcomponents.factory.FactoryFactory;
-import com.pastdev.httpcomponents.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+
+import com.pastdev.httpcomponents.annotations.Filter;
+import com.pastdev.httpcomponents.annotations.Servlet;
+import com.pastdev.httpcomponents.annotations.ServletContext;
+import com.pastdev.httpcomponents.annotations.ServletContextListener;
+import com.pastdev.httpcomponents.factory.FactoryFactory;
 
 
 public class JettyServers implements com.pastdev.httpcomponents.server.Servers {
@@ -120,52 +126,60 @@ public class JettyServers implements com.pastdev.httpcomponents.server.Servers {
                 return;
             }
 
-            ServletContextHandler handler = new ServletContextHandler();
-            HashSessionManager sessionManager = new HashSessionManager();
-            String cookieName = config.sessionCookieName();
-            if ( cookieName != null && !cookieName.isEmpty() ) {
-                logger.info( "Setting session cookie name to '{}'", cookieName );
-                sessionManager.getSessionCookieConfig().setName( cookieName );
-            }
-            handler.setSessionHandler( new SessionHandler( sessionManager ) );
-
-            String contextPath = config.contextPath();
-            if ( contextPath != null && !contextPath.isEmpty() ) {
-                handler.setContextPath( contextPath );
-            }
-
-            for ( ServletContextListener listener : config.servletContextListeners() ) {
-                handler.addEventListener( newServletContextListener(
-                        listener ) );
-            }
-            for ( Filter filter : config.filters() ) {
-                DispatcherType[] dispatcherTypes = filter.dispatcherTypes();
-                handler.addFilter(
-                        new FilterHolder(
-                                newFilter( filter ) ),
-                        filter.mapping(),
-                        dispatcherTypes.length > 0
-                                ? EnumSet.of( dispatcherTypes[0], dispatcherTypes )
-                                : EnumSet.noneOf( DispatcherType.class ) );
-
-            }
-            for ( Servlet servlet : config.servlets() ) {
-                handler.addServlet(
-                        new ServletHolder(
-                                newServlet( servlet ) ),
-                        servlet.mapping() );
-            }
-            
-            //TODO: implement naming annotation support
-
-            logger.debug( "Starting {}", name );
             server = new org.eclipse.jetty.server.Server();
-            server.setSessionIdManager( new HashSessionIdManager() );
             ServerConnector connector = new ServerConnector( server );
             connector.setHost( hostName );
             connector.setPort( port );
             server.addConnector( connector );
-            server.setHandler( handler );
+            server.setSessionIdManager( new HashSessionIdManager() );
+            HandlerCollection handlers = new HandlerCollection();
+            ContextHandlerCollection contexts = new ContextHandlerCollection();
+            handlers.setHandlers(new Handler[] { contexts, new DefaultHandler() });
+            server.setHandler(handlers);
+
+            for ( ServletContext servletContext : config.servletContexts() ) {
+                ServletContextHandler handler = new ServletContextHandler();
+                HashSessionManager sessionManager = new HashSessionManager();
+                String cookieName = config.sessionCookieName();
+                if ( cookieName != null && !cookieName.isEmpty() ) {
+                    logger.info( "Setting session cookie name to '{}'", cookieName );
+                    sessionManager.getSessionCookieConfig().setName( cookieName );
+                }
+                handler.setSessionHandler( new SessionHandler( sessionManager ) );
+
+                String contextPath = servletContext.path();
+                if ( contextPath != null && !contextPath.isEmpty() ) {
+                    handler.setContextPath( contextPath );
+                }
+
+                for ( ServletContextListener listener : servletContext.listeners() ) {
+                    handler.addEventListener( newServletContextListener(
+                            listener ) );
+                }
+                for ( Filter filter : servletContext.filters() ) {
+                    DispatcherType[] dispatcherTypes = filter.dispatcherTypes();
+                    handler.addFilter(
+                            new FilterHolder(
+                                    newFilter( filter ) ),
+                            filter.mapping(),
+                            dispatcherTypes.length > 0
+                                    ? EnumSet.of( dispatcherTypes[0], dispatcherTypes )
+                                    : EnumSet.noneOf( DispatcherType.class ) );
+
+                }
+                for ( Servlet servlet : servletContext.servlets() ) {
+                    handler.addServlet(
+                            new ServletHolder(
+                                    newServlet( servlet ) ),
+                            servlet.mapping() );
+                }
+
+                // TODO: implement naming annotation support
+
+                contexts.addHandler( handler );
+            }
+
+            logger.debug( "Starting {}", name );
             server.start();
 
             this.port = connector.getLocalPort();

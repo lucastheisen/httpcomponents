@@ -30,6 +30,7 @@ import com.pastdev.http.client.TunnelCapableHttpClientFactory;
 import com.pastdev.http.client.TunnelConnectionManagerFactory;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servlet;
+import com.pastdev.httpcomponents.annotations.ServletContext;
 import com.pastdev.httpcomponents.configuration.Configuration;
 import com.pastdev.httpcomponents.configuration.MapConfiguration;
 import com.pastdev.httpcomponents.jetty.JettyServerRule;
@@ -46,11 +47,12 @@ public class TunnelCapableHttpClientTest {
     @Server(
             id = "server",
             name = "Hello World",
-            servlets = {
-                    @Servlet(
-                            name = "Hello World",
-                            type = HelloWorldServlet.class )
-            } )
+            servletContexts = {
+                    @ServletContext(
+                            servlets = {
+                                    @Servlet(
+                                            name = "Hello World",
+                                            type = HelloWorldServlet.class ) } ) } )
     public void testGet() throws ClientProtocolException,
             IOException, URISyntaxException, NamingException {
         logger.debug( "testing GET" );

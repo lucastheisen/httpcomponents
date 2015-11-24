@@ -111,7 +111,12 @@ public class TomcatTest {
                                                     @ResourceRef(
                                                             name = "resource/thing1",
                                                             lookupName = "global/resource/thing1",
-                                                            type = String.class ) } ) )
+                                                            type = String.class ),
+                                                    @ResourceRef(
+                                                            name = "silly",
+                                                            lookupName = "silly",
+                                                            type = String.class )
+                                                            } ) )
                     } ) )
     public void testResource() throws ClientProtocolException,
             IOException, URISyntaxException, NamingException {
@@ -140,6 +145,7 @@ public class TomcatTest {
                 response.getWriter().print( "Hello, " +
                         new InitialContext().lookup( "java:comp/env/resource/thing1" ) +
                         "!" );
+                logger.warn( "silly=[{}]", new InitialContext().lookup( "java:comp/env/silly" ) );
             }
             catch ( NamingException e ) {
                 throw new ServletException( e );

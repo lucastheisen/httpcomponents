@@ -191,6 +191,9 @@ public class TomcatServers extends AbstractServers {
             }
 
             server.start();
+            
+            //TODO: set common factory built global resources here:
+            //server.getServer().getGlobalNamingContext().bind( "silly", "value" );
 
             return server.getConnector().getLocalPort();
         }
