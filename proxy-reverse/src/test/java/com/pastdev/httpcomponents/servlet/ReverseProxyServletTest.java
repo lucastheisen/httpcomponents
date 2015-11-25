@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 
 
 import java.io.IOException;
+import java.util.Map;
 
 
 import javax.servlet.ServletException;
@@ -29,12 +30,13 @@ import com.pastdev.http.client.TunnelCapableHttpClientFactory;
 import com.pastdev.httpcomponents.annotations.Configuration;
 import com.pastdev.httpcomponents.annotations.Environment;
 import com.pastdev.httpcomponents.annotations.FactoryParam;
+import com.pastdev.httpcomponents.annotations.Listener;
+import com.pastdev.httpcomponents.annotations.Param;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servers;
 import com.pastdev.httpcomponents.annotations.Servlet;
 import com.pastdev.httpcomponents.annotations.WebApp;
-import com.pastdev.httpcomponents.annotations.Listener;
-import com.pastdev.httpcomponents.factory.TunnelValueFactory;
+import com.pastdev.httpcomponents.factory.AbstractParamValueFactory;
 import com.pastdev.httpcomponents.jetty.JettyServerRule;
 import com.pastdev.httpcomponents.junit.ServerRule;
 import com.pastdev.httpcomponents.util.ProxyUri;
@@ -109,17 +111,17 @@ public class ReverseProxyServletTest {
                                                     name = "targetUri",
                                                     serverRef = "hello",
                                                     value = "uriString" ) } ) ) },
-                            listeners = { @Listener(
-                                    name = "Tunnel Manager",
-                                    type = HttpClientFactoryServletContextListener.class,
-                                    configuration = @Configuration(
-                                            environment = { @Environment(
-                                                    name = "tunnel",
-                                                    serverRef = "hello",
-                                                    factory = TunnelValueFactory.class,
-                                                    factoryParams = { @FactoryParam(
-                                                            name = "path",
-                                                            value = "localhost" ) } ) } ) ) } ) } ) } )
+                            contextParams = {
+                                    @Param(
+                                            paramName = "tunnel.tunnel",
+                                            paramValueFactory = TunnelTunnelFactory.class,
+                                            factoryParams = {
+                                                    @FactoryParam( name = "serverId", value = "hello" ),
+                                                    @FactoryParam( name = "path", value = "localhost" )
+                                            } )
+                            },
+                            listeners = {
+                                    @Listener( listenerClass = HttpClientFactoryServletContextListener.class ) } ) } ) } )
     public void testWithTunnel() throws Exception {
         logger.debug( "hello world through a tunnel!" );
         HttpClient client = new TunnelCapableHttpClientFactory().create();
@@ -245,6 +247,20 @@ public class ReverseProxyServletTest {
                 throws ServletException, IOException {
             response.setContentType( "text/plain" );
             response.getWriter().print( "Hello World" );
+        }
+    }
+
+    private static class TunnelTunnelFactory extends AbstractParamValueFactory {
+        @Override
+        public String valueOf( com.pastdev.httpcomponents.server.Servers servers, Map<String, String> factoryParams ) {
+            String serverId = factoryParams.get( "serverId" );
+            String hostName = servers.getHostName( serverId );
+            int port = servers.getPort( serverId );
+            String path = factoryParams.get( "path" );
+            if ( path == null ) {
+                path = "localhost";
+            }
+            return path + "|" + hostName + ":" + port;
         }
     }
 }

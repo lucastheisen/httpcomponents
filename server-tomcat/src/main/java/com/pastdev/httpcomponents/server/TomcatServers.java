@@ -27,20 +27,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-import com.pastdev.httpcomponents.annotations.ContextParam;
 import com.pastdev.httpcomponents.annotations.Filter;
-import com.pastdev.httpcomponents.annotations.InitParam;
 import com.pastdev.httpcomponents.annotations.Listener;
+import com.pastdev.httpcomponents.annotations.Param;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servlet;
 import com.pastdev.httpcomponents.annotations.WebApp;
 import com.pastdev.httpcomponents.annotations.naming.EnvEntry;
+import com.pastdev.httpcomponents.annotations.naming.Resource;
 import com.pastdev.httpcomponents.annotations.naming.ResourceProperty;
 import com.pastdev.httpcomponents.annotations.naming.ResourcePropertyFactory;
+import com.pastdev.httpcomponents.annotations.naming.ResourceRef;
+import com.pastdev.httpcomponents.factory.NullParamValueFactory;
+import com.pastdev.httpcomponents.factory.ParamValueFactory;
 
 
 public class TomcatServers extends AbstractServers {
-    private static Logger logger = LoggerFactory.getLogger( TomcatServers.class );
+    private static Logger LOGGER = LoggerFactory.getLogger( TomcatServers.class );
 
     public TomcatServers( com.pastdev.httpcomponents.annotations.Server server ) throws Exception {
         super( server );
@@ -69,16 +72,16 @@ public class TomcatServers extends AbstractServers {
             try {
                 if ( server != null ) {
                     server.stop();
-                    logger.info( "Stopped {}", this );
+                    LOGGER.info( "Stopped {}", this );
                     server.destroy();
-                    logger.info( "Destroyed {}", this );
+                    LOGGER.info( "Destroyed {}", this );
                 }
             }
             catch ( Exception e ) {
                 throw new IOException( "failed to stop the server", e );
             }
             finally {
-                logger.info( "Cleaning up tomcat base dir [{}]", tomcatBase );
+                LOGGER.info( "Cleaning up tomcat base dir [{}]", tomcatBase );
                 Files.deleteIfExists( Files.walkFileTree( tomcatBase,
                         new FileVisitor<Path>() {
                             @Override
@@ -99,7 +102,7 @@ public class TomcatServers extends AbstractServers {
 
                             @Override
                             public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException {
-                                logger.trace( "Deleting dir [{}]", dir );
+                                LOGGER.trace( "Deleting dir [{}]", dir );
                                 Files.delete( dir );
                                 return FileVisitResult.CONTINUE;
                             }
@@ -120,31 +123,27 @@ public class TomcatServers extends AbstractServers {
             server.getHost().setAppBase( webApps.toString() );
             server.getServer().addLifecycleListener( new AprLifecycleListener() );
 
-            server.enableNaming();
-            NamingResources namingResources = new NamingResources();
-            for ( com.pastdev.httpcomponents.annotations.naming.Resource resourceConfig : config.namingResources().resources() ) {
-                ContextResource resource = new ContextResource();
-                resource.setName( resourceConfig.name() );
-                resource.setType( resourceConfig.type().getName() );
-                for ( ResourcePropertyFactory propertiesFactory : resourceConfig.propertiesFactories() ) {
-                    Properties properties = propertiesFactory.factory().newInstance().properties( config );
-                    for ( String propertyName : properties.stringPropertyNames() ) {
-                        resource.setProperty( propertyName, properties.get( propertyName ) );
-                    }
+            boolean namingEnabled = false;
+            NamingResources namingResources = null;
+            if ( config.namingResources().resources().length > 0 ) {
+                namingResources = new NamingResources();
+                for ( com.pastdev.httpcomponents.annotations.naming.Resource resourceConfig : config.namingResources().resources() ) {
+                    namingResources.addResource( newContextResource( config, resourceConfig ) );
                 }
-                for ( ResourceProperty property : resourceConfig.properties() ) {
-                    resource.setProperty( property.name(), property.value() );
+            }
+            if ( config.namingResources().envEntries().length > 0 ) {
+                if ( namingResources == null ) {
+                    namingResources = new NamingResources();
                 }
-                namingResources.addResource( resource );
+                for ( EnvEntry envEntry : config.namingResources().envEntries() ) {
+                    namingResources.addEnvironment( newContextEnvironment( envEntry ) );
+                }
             }
-            for ( EnvEntry envEntry : config.namingResources().envEntries() ) {
-                ContextEnvironment environment = new ContextEnvironment();
-                environment.setName( envEntry.name() );
-                environment.setValue( envEntry.value() );
-                environment.setType( envEntry.type().getName() );
-                namingResources.addEnvironment( environment );
+            if ( namingResources != null ) {
+                server.enableNaming();
+                namingEnabled = true;
+                server.getServer().setGlobalNamingResources( namingResources );
             }
-            server.getServer().setGlobalNamingResources( namingResources );
 
             for ( WebApp webApp : config.webApps() ) {
                 StandardContext context = (StandardContext) server.getHost().findChild( webApp.path() );
@@ -154,13 +153,21 @@ public class TomcatServers extends AbstractServers {
                     context = (StandardContext) server.addContext( contextPath, contextDocBase );
                     if ( !webApp.path().isEmpty() ) {
                         Path webAppPath = webApps.resolve( contextDocBase );
-                        logger.trace( "Creating temp docBase [{}] for [{}]", webAppPath, contextPath );
+                        LOGGER.trace( "Creating temp docBase [{}] for [{}]", webAppPath, contextPath );
                         Files.createDirectory( webAppPath );
                     }
                 }
 
-                for ( ContextParam contextParam : webApp.contextParams() ) {
-                    context.addParameter( contextParam.paramName(), contextParam.paramValue() );
+                for ( Param contextParam : webApp.contextParams() ) {
+                    Class<? extends ParamValueFactory> factoryClass = contextParam.paramValueFactory();
+                    if ( NullParamValueFactory.class.isAssignableFrom( factoryClass ) ) {
+                        context.addParameter( contextParam.paramName(), contextParam.paramValue() );
+                    }
+                    else {
+                        context.addParameter( contextParam.paramName(),
+                                factoryClass.newInstance().valueOf(
+                                        TomcatServers.this, contextParam ) );
+                    }
                 }
                 for ( Listener listener : webApp.listeners() ) {
                     context.addApplicationListener( listener.listenerClass().getName() );
@@ -182,38 +189,84 @@ public class TomcatServers extends AbstractServers {
                     Wrapper wrapper = server.addServlet( contextPath, servlet.name(),
                             newServlet( TomcatServers.this, servlet ) );
 
-                    for ( InitParam initParam : servlet.initParams() ) {
-                        wrapper.addInitParameter( initParam.paramName(), initParam.paramValue() );
+                    for ( Param initParam : servlet.initParams() ) {
+                        Class<? extends ParamValueFactory> factoryClass = initParam.paramValueFactory();
+                        if ( NullParamValueFactory.class.isAssignableFrom( factoryClass ) ) {
+                            wrapper.addInitParameter( initParam.paramName(), initParam.paramValue() );
+                        }
+                        else {
+                            wrapper.addInitParameter( initParam.paramName(),
+                                    factoryClass.newInstance().valueOf(
+                                            TomcatServers.this, initParam ) );
+                        }
                     }
 
-                    logger.debug( "Adding mapping [{}] for [{}]", servlet.mapping(), servlet.name() );
+                    LOGGER.debug( "Adding mapping [{}] for [{}]", servlet.mapping(), servlet.name() );
                     context.addServletMapping( servlet.mapping(), servlet.name() );
-                    NamingResources contextNamingResources = new NamingResources();
-                    for ( com.pastdev.httpcomponents.annotations.naming.ResourceRef resourceRef : servlet.namingResources().resourceRefs() ) {
-                        ContextResourceLink resourceLink = new ContextResourceLink();
-                        resourceLink.setName( resourceRef.name() );
-                        resourceLink.setGlobal( resourceRef.lookupName() );
-                        resourceLink.setType( resourceRef.type().getName() );
-                        contextNamingResources.addResourceLink( resourceLink );
+                    namingResources = null;
+                    if ( servlet.namingResources().resourceRefs().length > 0 ) {
+                        namingResources = new NamingResources();
+                        for ( com.pastdev.httpcomponents.annotations.naming.ResourceRef resourceRef : servlet.namingResources().resourceRefs() ) {
+                            namingResources.addResourceLink( newContextResourceLink( resourceRef ) );
+                        }
                     }
-                    for ( EnvEntry envEntry : servlet.namingResources().envEntries() ) {
-                        ContextEnvironment environment = new ContextEnvironment();
-                        environment.setName( envEntry.name() );
-                        environment.setValue( envEntry.value() );
-                        environment.setType( envEntry.type().getName() );
-                        contextNamingResources.addEnvironment( environment );
+                    if ( servlet.namingResources().resourceRefs().length > 0 ) {
+                        if ( namingResources == null ) {
+                            namingResources = new NamingResources();
+                            for ( EnvEntry envEntry : servlet.namingResources().envEntries() ) {
+                                namingResources.addEnvironment( newContextEnvironment( envEntry ) );
+                            }
+                        }
                     }
-                    context.setNamingResources( contextNamingResources );
+                    if ( namingResources != null ) {
+                        if ( !namingEnabled ) {
+                            server.enableNaming();
+                        }
+                        context.setNamingResources( namingResources );
+                    }
                 }
             }
 
             server.start();
 
-            // TODO: set common factory built global resources here:
-            // server.getServer().getGlobalNamingContext().bind( "silly",
-            // "value" );
-
             return server.getConnector().getLocalPort();
         }
+    }
+
+    public ContextEnvironment newContextEnvironment( EnvEntry config ) {
+        ContextEnvironment environment = new ContextEnvironment();
+        environment.setName( config.name() );
+        environment.setValue( config.value() );
+        environment.setType( config.type().getName() );
+        return environment;
+    }
+
+    public ContextResource newContextResource( Server server, Resource config ) {
+        ContextResource resource = new ContextResource();
+        resource.setName( config.name() );
+        resource.setType( config.type().getName() );
+        for ( ResourcePropertyFactory propertiesFactory : config.propertiesFactories() ) {
+            try {
+                Properties properties = propertiesFactory.factory().newInstance().properties( server );
+                for ( String propertyName : properties.stringPropertyNames() ) {
+                    resource.setProperty( propertyName, properties.get( propertyName ) );
+                }
+            }
+            catch ( InstantiationException | IllegalAccessException e ) {
+                LOGGER.warn( "Unable to load properties for [{}]", propertiesFactory.factory() );
+            }
+        }
+        for ( ResourceProperty property : config.properties() ) {
+            resource.setProperty( property.name(), property.value() );
+        }
+        return resource;
+    }
+
+    public ContextResourceLink newContextResourceLink( ResourceRef config ) {
+        ContextResourceLink resourceLink = new ContextResourceLink();
+        resourceLink.setName( config.name() );
+        resourceLink.setGlobal( config.lookupName() );
+        resourceLink.setType( config.type().getName() );
+        return resourceLink;
     }
 }

@@ -2,7 +2,7 @@ package com.pastdev.httpcomponents.annotations;
 
 
 public @interface WebApp {
-    public ContextParam[] contextParams() default {};
+    public Param[] contextParams() default {};
     
     public Filter[] filters() default {};
 
