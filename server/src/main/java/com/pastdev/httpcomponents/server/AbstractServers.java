@@ -17,15 +17,27 @@ abstract public class AbstractServers implements Servers {
 
     private Map<String, Server> servers;
 
+    public AbstractServers( Class<?> annotatedClass ) throws Exception {
+        com.pastdev.httpcomponents.annotations.Servers servers = annotatedClass.getAnnotation(
+                com.pastdev.httpcomponents.annotations.Servers.class );
+        if ( servers != null ) {
+            initialize( servers.servers() );
+        }
+        else {
+            initialize( annotatedClass.getAnnotation(
+                    com.pastdev.httpcomponents.annotations.Server.class ) );
+        }
+    }
+
     public AbstractServers( com.pastdev.httpcomponents.annotations.Server server ) throws Exception {
-        this( new com.pastdev.httpcomponents.annotations.Server[] { server } );
+        initialize( server );
     }
 
     public AbstractServers( com.pastdev.httpcomponents.annotations.Servers servers ) throws Exception {
-        this( servers.servers() );
+        initialize( servers.servers() );
     }
 
-    private AbstractServers( com.pastdev.httpcomponents.annotations.Server[] servers ) throws Exception {
+    private void initialize( com.pastdev.httpcomponents.annotations.Server... servers ) throws Exception {
         this.servers = new HashMap<String, Server>();
 
         for ( com.pastdev.httpcomponents.annotations.Server serverConfig : servers ) {
@@ -70,7 +82,7 @@ abstract public class AbstractServers implements Servers {
     public String getScheme( String serverId ) {
         return server( serverId ).getScheme();
     }
-    
+
     protected Server server( String serverId ) {
         return servers.get( serverId );
     }

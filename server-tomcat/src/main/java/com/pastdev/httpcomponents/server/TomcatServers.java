@@ -45,6 +45,10 @@ import com.pastdev.httpcomponents.factory.ParamValueFactory;
 public class TomcatServers extends AbstractServers {
     private static Logger LOGGER = LoggerFactory.getLogger( TomcatServers.class );
 
+    public TomcatServers( Class<?> annotatedClass ) throws Exception {
+        super( annotatedClass );
+    }
+
     public TomcatServers( com.pastdev.httpcomponents.annotations.Server server ) throws Exception {
         super( server );
     }
@@ -146,11 +150,11 @@ public class TomcatServers extends AbstractServers {
             }
 
             for ( WebApp webApp : config.webApps() ) {
-                StandardContext context = (StandardContext) server.getHost().findChild( webApp.path() );
+                StandardContext context = (StandardContext)server.getHost().findChild( webApp.path() );
                 String contextPath = webApp.path().startsWith( "/" ) ? webApp.path() : "/" + webApp.path();
                 String contextDocBase = webApp.path().startsWith( "/" ) ? webApp.path().substring( 1 ) : webApp.path();
                 if ( context == null ) {
-                    context = (StandardContext) server.addContext( contextPath, contextDocBase );
+                    context = (StandardContext)server.addContext( contextPath, contextDocBase );
                     if ( !webApp.path().isEmpty() ) {
                         Path webAppPath = webApps.resolve( contextDocBase );
                         LOGGER.trace( "Creating temp docBase [{}] for [{}]", webAppPath, contextPath );
@@ -227,7 +231,10 @@ public class TomcatServers extends AbstractServers {
                 }
             }
 
+            LOGGER.info( "Starting {}", getName() );
             server.start();
+
+            LOGGER.info( "Started {}", this );
 
             return server.getConnector().getLocalPort();
         }

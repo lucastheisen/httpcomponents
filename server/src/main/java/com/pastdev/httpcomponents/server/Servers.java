@@ -7,15 +7,15 @@ import java.net.URISyntaxException;
 
 
 public interface Servers extends Closeable {
-    public String getHostName( String serverId );
+    String getHostName( String serverId );
 
-    public String getName( String serverId );
+    String getName( String serverId );
 
-    public int getPort( String serverId );
+    int getPort( String serverId );
 
-    public String getScheme( String serverId );
+    String getScheme( String serverId );
 
-    public URI getUri( String serverId ) throws URISyntaxException;
+    URI getUri( String serverId ) throws URISyntaxException;
 
-    public String getUriString( String serverId ) throws URISyntaxException;
+    String getUriString( String serverId ) throws URISyntaxException;
 }
