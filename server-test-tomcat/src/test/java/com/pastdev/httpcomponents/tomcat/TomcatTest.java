@@ -26,6 +26,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 
+import com.pastdev.httpcomponents.annotations.Filter;
+import com.pastdev.httpcomponents.annotations.FilterMapping;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servlet;
 import com.pastdev.httpcomponents.annotations.WebApp;
@@ -116,12 +118,50 @@ public class TomcatTest {
         assertEquals( "Hello, Thing1!", EntityUtils.toString( response.getEntity() ) );
     }
 
-    public static class HelloThing1Servlet extends HttpServlet {
+    @Test
+    @Server(
+            id = "server",
+            name = "Inject User Principal",
+            webApps = @WebApp(
+                    path = "/inject-user-principal",
+                    filters = {
+                            @Filter(
+                                    name = "identityinject",
+                                    type = UserPrincipalInjectionFilter.class,
+                                    mapping = @FilterMapping( servletNames = "Echo User Principal" ) ) },
+                    servlets = {
+                            @Servlet(
+                                    name = "Echo User Principal",
+                                    type = EchoUserPrincipalServlet.class ) } ) )
+    public void testFilter() throws ClientProtocolException,
+            IOException, URISyntaxException, NamingException {
+        HttpResponse response = HttpClientBuilder.create().build()
+                .execute( new HttpGet( new URIBuilder()
+                        .setScheme( "http" )
+                        .setHost( "localhost" )
+                        .setPort( server.getPort( "server" ) )
+                        .setPath( "/inject-user-principal" )
+                        .build() ) );
+        assertEquals( 200, response.getStatusLine().getStatusCode() );
+        assertEquals( UserPrincipalInjectionFilter.DEFAULT_PRINCIPAL_NAME,
+                EntityUtils.toString( response.getEntity() ) );
+    }
+
+    public static class EchoUserPrincipalServlet extends HttpServlet {
         private static final long serialVersionUID = 1L;
 
         public void doGet( HttpServletRequest request, HttpServletResponse response )
                 throws ServletException, IOException {
             response.setContentType( "text/plain" );
+            response.getWriter().print( request.getUserPrincipal().getName() );
+        }
+    }
+
+    public static class HelloThing1Servlet extends HttpServlet {
+        private static final long serialVersionUID = 1L;
+
+        public void doGet( HttpServletRequest request, HttpServletResponse response )
+                throws ServletException, IOException {
             try {
                 response.getWriter().print( "Hello, " +
                         new InitialContext().lookup( "java:comp/env/resource/thing1" ) +

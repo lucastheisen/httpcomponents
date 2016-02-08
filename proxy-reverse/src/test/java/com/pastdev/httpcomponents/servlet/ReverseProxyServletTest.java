@@ -35,6 +35,7 @@ import com.pastdev.httpcomponents.annotations.Param;
 import com.pastdev.httpcomponents.annotations.Server;
 import com.pastdev.httpcomponents.annotations.Servers;
 import com.pastdev.httpcomponents.annotations.Servlet;
+import com.pastdev.httpcomponents.annotations.ServletMapping;
 import com.pastdev.httpcomponents.annotations.WebApp;
 import com.pastdev.httpcomponents.factory.AbstractParamValueFactory;
 import com.pastdev.httpcomponents.jetty.JettyServerRule;
@@ -53,31 +54,28 @@ public class ReverseProxyServletTest {
             @Server(
                     id = "hello",
                     name = "Hello World Server",
-                    webApps = {
-                            @WebApp(
-                                    servlets = { @Servlet(
-                                            name = "Hello World Servlet",
-                                            type = HelloWorldServlet.class ) } )
-                    }
+                    webApps = @WebApp(
+                            servlets = @Servlet(
+                                    name = "Hello World Servlet",
+                                    type = HelloWorldServlet.class ) )
             ),
             @Server(
                     id = "proxy",
                     name = "Proxy Server",
-                    webApps = {
-                            @WebApp(
-                                    servlets = { @Servlet(
-                                            name = "Proxy Servlet",
-                                            type = ReverseProxyServlet.class,
-                                            configuration = @Configuration(
-                                                    environment = {
-                                                            @Environment(
-                                                                    name = "setXRequestId",
-                                                                    type = java.lang.Boolean.class,
-                                                                    value = "true" ),
-                                                            @Environment(
-                                                                    name = "targetUri",
-                                                                    serverRef = "hello",
-                                                                    value = "uriString" ) } ) ) } ) } ) } )
+                    webApps = @WebApp(
+                            servlets = @Servlet(
+                                    name = "Proxy Servlet",
+                                    type = ReverseProxyServlet.class,
+                                    configuration = @Configuration(
+                                            environment = {
+                                                    @Environment(
+                                                            name = "setXRequestId",
+                                                            type = java.lang.Boolean.class,
+                                                            value = "true" ),
+                                                    @Environment(
+                                                            name = "targetUri",
+                                                            serverRef = "hello",
+                                                            value = "uriString" ) } ) ) ) ) } )
     public void testWithoutTunnel() throws Exception {
         logger.debug( "hello world!" );
         HttpClient client = HttpClientBuilder.create().build();
@@ -95,33 +93,31 @@ public class ReverseProxyServletTest {
             @Server(
                     id = "hello",
                     name = "Hello World Server",
-                    webApps = { @WebApp(
-                            servlets = { @Servlet(
+                    webApps = @WebApp(
+                            servlets = @Servlet(
                                     name = "Hello World Servlet",
-                                    type = HelloWorldServlet.class ) } ) } ),
+                                    type = HelloWorldServlet.class ) ) ),
             @Server(
                     id = "proxy",
                     name = "Proxy Server",
-                    webApps = { @WebApp(
-                            servlets = { @Servlet(
+                    webApps = @WebApp(
+                            servlets = @Servlet(
                                     name = "Proxy Servlet",
                                     type = ReverseProxyServlet.class,
                                     configuration = @Configuration(
-                                            environment = { @Environment(
+                                            environment = @Environment(
                                                     name = "targetUri",
                                                     serverRef = "hello",
-                                                    value = "uriString" ) } ) ) },
-                            contextParams = {
-                                    @Param(
-                                            paramName = "tunnel.tunnel",
-                                            paramValueFactory = TunnelTunnelFactory.class,
-                                            factoryParams = {
-                                                    @FactoryParam( name = "serverId", value = "hello" ),
-                                                    @FactoryParam( name = "path", value = "localhost" )
-                                            } )
-                            },
+                                                    value = "uriString" ) ) ),
+                            contextParams = @Param(
+                                    paramName = "tunnel.tunnel",
+                                    paramValueFactory = TunnelTunnelFactory.class,
+                                    factoryParams = {
+                                            @FactoryParam( name = "serverId", value = "hello" ),
+                                            @FactoryParam( name = "path", value = "localhost" )
+                                    } ),
                             listeners = {
-                                    @Listener( listenerClass = HttpClientFactoryServletContextListener.class ) } ) } ) } )
+                                    @Listener( listenerClass = HttpClientFactoryServletContextListener.class ) } ) ) } )
     public void testWithTunnel() throws Exception {
         logger.debug( "hello world through a tunnel!" );
         HttpClient client = new TunnelCapableHttpClientFactory().create();
@@ -139,26 +135,24 @@ public class ReverseProxyServletTest {
             @Server(
                     id = "hello",
                     name = "Hello World Server",
-                    webApps = {
-                            @WebApp(
-                                    servlets = { @Servlet(
-                                            name = "Hello World Servlet",
-                                            mapping = "/hello",
-                                            type = HelloWorldServlet.class ) } ) } ),
+                    webApps = @WebApp(
+                            servlets = @Servlet(
+                                    name = "Hello World Servlet",
+                                    mapping = @ServletMapping( urlPatterns = "/hello" ),
+                                    type = HelloWorldServlet.class ) ) ),
             @Server(
                     id = "proxy",
                     name = "Proxy Server",
-                    webApps = {
-                            @WebApp(
-                                    path = "/proxy",
-                                    servlets = { @Servlet(
-                                            name = "Proxy Servlet",
-                                            type = ReverseProxyServlet.class,
-                                            configuration = @Configuration(
-                                                    environment = { @Environment(
-                                                            name = "targetUri",
-                                                            serverRef = "hello",
-                                                            value = "uriString" ) } ) ) } ) } ) } )
+                    webApps = @WebApp(
+                            path = "/proxy",
+                            servlets = @Servlet(
+                                    name = "Proxy Servlet",
+                                    type = ReverseProxyServlet.class,
+                                    configuration = @Configuration(
+                                            environment = { @Environment(
+                                                    name = "targetUri",
+                                                    serverRef = "hello",
+                                                    value = "uriString" ) } ) ) ) ) } )
     public void testWithContextPath() throws Exception {
         logger.debug( "hello world!" );
         HttpClient client = HttpClientBuilder.create().build();
@@ -185,31 +179,29 @@ public class ReverseProxyServletTest {
             @Server(
                     id = "hello",
                     name = "Hello World Server",
-                    webApps = {
-                            @WebApp(
-                                    servlets = { @Servlet(
-                                            name = "Hello World Servlet",
-                                            mapping = "/hello",
-                                            type = HelloWorldServlet.class ) } ) } ),
+                    webApps = @WebApp(
+                            servlets = @Servlet(
+                                    name = "Hello World Servlet",
+                                    mapping = @ServletMapping( urlPatterns = "/hello" ),
+                                    type = HelloWorldServlet.class ) ) ),
             @Server(
                     id = "proxy",
                     name = "Proxy Server",
-                    webApps = {
-                            @WebApp(
-                                    path = "/proxy",
-                                    servlets = { @Servlet(
-                                            name = "Proxy Servlet",
-                                            type = ReverseProxyServlet.class,
-                                            configuration = @Configuration(
-                                                    environment = {
-                                                            @Environment(
-                                                                    name = "responseHandler",
-                                                                    type = Class.class,
-                                                                    value = "com.pastdev.httpcomponents.servlet.ReverseProxyServletTest$CustomReverseProxyResponseHandler" ),
-                                                            @Environment(
-                                                                    name = "targetUri",
-                                                                    serverRef = "hello",
-                                                                    value = "uriString" ) } ) ) } ) } ) } )
+                    webApps = @WebApp(
+                            path = "/proxy",
+                            servlets = @Servlet(
+                                    name = "Proxy Servlet",
+                                    type = ReverseProxyServlet.class,
+                                    configuration = @Configuration(
+                                            environment = {
+                                                    @Environment(
+                                                            name = "responseHandler",
+                                                            type = Class.class,
+                                                            value = "com.pastdev.httpcomponents.servlet.ReverseProxyServletTest$CustomReverseProxyResponseHandler" ),
+                                                    @Environment(
+                                                            name = "targetUri",
+                                                            serverRef = "hello",
+                                                            value = "uriString" ) } ) ) ) ) } )
     public void testCustomResponseHandler() throws Exception {
         logger.debug( "hello world!" );
         HttpClient client = HttpClientBuilder.create().build();

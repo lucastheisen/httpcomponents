@@ -15,7 +15,7 @@ public @interface Servlet {
 
     public Param[] initParams() default {};
 
-    public String mapping() default "/*";
+    public ServletMapping mapping() default @ServletMapping( urlPatterns = "/*" );
 
     public String name();
 

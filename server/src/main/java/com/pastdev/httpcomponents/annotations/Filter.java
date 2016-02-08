@@ -1,9 +1,6 @@
 package com.pastdev.httpcomponents.annotations;
 
 
-import javax.servlet.DispatcherType;
-
-
 import com.pastdev.httpcomponents.factory.ConfigurableObjectFactory;
 import com.pastdev.httpcomponents.factory.FilterFactory;
 
@@ -11,15 +8,13 @@ import com.pastdev.httpcomponents.factory.FilterFactory;
 public @interface Filter {
     public Configuration configuration() default @Configuration;
 
-    public DispatcherType[] dispatcherTypes() default {
-            DispatcherType.REQUEST
-    };
-
     public Class<? extends FilterFactory> factory() default ConfigurableObjectFactory.class;
-    
+
     public FactoryParam[] factoryParams() default {};
 
-    public String mapping() default "/*";
+    public Param[] initParams() default {};
+
+    public FilterMapping mapping() default @FilterMapping( urlPatterns = "/*" );
 
     public String name();
 

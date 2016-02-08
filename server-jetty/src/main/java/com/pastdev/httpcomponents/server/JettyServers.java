@@ -24,8 +24,10 @@ import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlet.ServletMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -155,24 +157,29 @@ public class JettyServers implements com.pastdev.httpcomponents.server.Servers {
 
                 for ( Listener listener : servletContext.listeners() ) {
                     Object listenerObject = listener.listenerClass().newInstance();
-                    handler.addEventListener( (EventListener)listenerObject );
+                    handler.addEventListener( (EventListener) listenerObject );
                 }
                 for ( Filter filter : servletContext.filters() ) {
-                    DispatcherType[] dispatcherTypes = filter.dispatcherTypes();
-                    handler.addFilter(
-                            new FilterHolder(
-                                    newFilter( filter ) ),
-                            filter.mapping(),
+                    DispatcherType[] dispatcherTypes = filter.mapping().dispatcherTypes();
+                    FilterMapping mapping = new FilterMapping();
+                    mapping.setFilterName( filter.name() );
+                    mapping.setPathSpecs( filter.mapping().urlPatterns() );
+                    mapping.setServletNames( filter.mapping().servletNames() );
+                    mapping.setDispatcherTypes(
                             dispatcherTypes.length > 0
                                     ? EnumSet.of( dispatcherTypes[0], dispatcherTypes )
                                     : EnumSet.noneOf( DispatcherType.class ) );
-
+                    FilterHolder holder = new FilterHolder( newFilter( filter ) );
+                    holder.setName( filter.name() );
+                    handler.getServletHandler().addFilter( holder, mapping );
                 }
                 for ( Servlet servlet : servletContext.servlets() ) {
-                    handler.addServlet(
-                            new ServletHolder(
-                                    newServlet( servlet ) ),
-                            servlet.mapping() );
+                    ServletMapping mapping = new ServletMapping();
+                    mapping.setServletName( servlet.name() );
+                    mapping.setPathSpecs( servlet.mapping().urlPatterns() );
+                    handler.getServletHandler().addServlet( new ServletHolder(
+                            servlet.name(), newServlet( servlet ) ) );
+                    handler.getServletHandler().addServletMapping( mapping );
                 }
 
                 // TODO: implement naming annotation support

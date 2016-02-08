@@ -47,12 +47,10 @@ public class TunnelCapableHttpClientTest {
     @Server(
             id = "server",
             name = "Hello World",
-            webApps = {
-                    @WebApp(
-                            servlets = {
-                                    @Servlet(
-                                            name = "Hello World",
-                                            type = HelloWorldServlet.class ) } ) } )
+            webApps = @WebApp(
+                    servlets = @Servlet(
+                            name = "Hello World",
+                            type = HelloWorldServlet.class ) ) )
     public void testGet() throws ClientProtocolException,
             IOException, URISyntaxException, NamingException {
         logger.debug( "testing GET" );

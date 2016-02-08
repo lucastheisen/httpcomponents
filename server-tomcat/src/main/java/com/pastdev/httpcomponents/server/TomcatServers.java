@@ -178,13 +178,32 @@ public class TomcatServers extends AbstractServers {
                 }
                 for ( Filter filter : webApp.filters() ) {
                     FilterDef filterDef = new FilterDef();
+                    filterDef.setFilterName( filter.name() );
+                    filterDef.setFilterClass( filter.type().getName() );
                     filterDef.setFilter( newFilter( TomcatServers.this, filter ) );
                     context.addFilterDef( filterDef );
 
+                    for ( Param initParam : filter.initParams() ) {
+                        Class<? extends ParamValueFactory> factoryClass = initParam.paramValueFactory();
+                        if ( NullParamValueFactory.class.isAssignableFrom( factoryClass ) ) {
+                            filterDef.addInitParameter( initParam.paramName(), initParam.paramValue() );
+                        }
+                        else {
+                            filterDef.addInitParameter( initParam.paramName(),
+                                    factoryClass.newInstance().valueOf(
+                                            TomcatServers.this, initParam ) );
+                        }
+                    }
+
                     FilterMap filterMapping = new FilterMap();
                     filterMapping.setFilterName( filter.name() );
-                    filterMapping.addURLPattern( filter.mapping() );
-                    for ( DispatcherType dispatcherType : filter.dispatcherTypes() ) {
+                    for ( String urlPattern : filter.mapping().urlPatterns() ) {
+                        filterMapping.addURLPattern( urlPattern );
+                    }
+                    for ( String servletName : filter.mapping().servletNames() ) {
+                        filterMapping.addServletName( servletName );
+                    }
+                    for ( DispatcherType dispatcherType : filter.mapping().dispatcherTypes() ) {
                         filterMapping.setDispatcher( dispatcherType.toString() );
                     }
                     context.addFilterMap( filterMapping );
@@ -205,8 +224,10 @@ public class TomcatServers extends AbstractServers {
                         }
                     }
 
-                    LOGGER.debug( "Adding mapping [{}] for [{}]", servlet.mapping(), servlet.name() );
-                    context.addServletMapping( servlet.mapping(), servlet.name() );
+                    for ( String urlPattern : servlet.mapping().urlPatterns() ) {
+                        LOGGER.debug( "Adding mapping [{}] for [{}]", urlPattern, servlet.name() );
+                        context.addServletMapping( urlPattern, servlet.name() );
+                    }
                     namingResources = null;
                     if ( servlet.namingResources().resourceRefs().length > 0 ) {
                         namingResources = new NamingResources();
